@@ -103,3 +103,13 @@ test("Workers AI answer writer: a made-up salary number is thrown away (it would
   const ok = { run: async () => ({ response: "Capes are not allowed on Mondays, darling." }) };
   assert.match((await ask({ ...ENV, AI: ok }, fga, BADGES.pip, "What is the dress code?", 0)).answer, /darling/);
 });
+
+test("Workers AI answer writer: an echo of the prompt with tags is not shown (CH's live lobby sign)", async () => {
+  const echo = { run: async (_m, input) => ({ response: "<house_line>📄 Lobby Sign: Welcome to Pemberton Paperclip Co. Visitors are cleared to read this sign and nothing else, including what the kiosk is for. Lost a badge? The Lost & Found is behind the Front Desk. The code word is PAPERCLIP. Doreen will help you. There is no Doreen. Badges are issued by people, never by the bot.</house_line>" }) };
+  const r = await ask({ ...ENV, AI: echo }, fga, BADGES.pip, "What does the lobby sign say?", 0);
+  assert.doesNotMatch(r.answer, /<\/?house_line>/);
+  assert.match(r.answer, /PAPERCLIP/);
+  const tagged = { run: async () => ({ response: "<reply>Darling, the code word is PAPERCLIP and Doreen does not exist.</reply>" }) };
+  const t = await ask({ ...ENV, AI: tagged }, fga, BADGES.pip, "What does the lobby sign say?", 0);
+  assert.equal(t.answer, "Darling, the code word is PAPERCLIP and Doreen does not exist.");
+});

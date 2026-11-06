@@ -236,7 +236,7 @@ export default {
     if (url.pathname === "/api/ask") {
       const q = String(body.question || "").slice(0, 600);
       const r = await ask(env, fga, who.badge, q, Number(body.turn) || 0);
-      await record(env, who.badge, q, r);
+      if (req.headers.get("x-smoke-test") !== "1") await record(env, who.badge, q, r); // the deploy check doesn't count as a heist
       await playtest(env, req, playtestEvent("ask", who, { q, trick: r.trick, answer: r.answer.slice(0, 500), searched: r.searched, blocked: r.blocked, sentToLlm: r.sentToLlm, checks: r.checks.map((c) => `${c.doc}:${c.allowed ? "ALLOWED" : "DENIED"}`) }));
       return json({ ...r, career: career(who.level) }, { headers });
     }
