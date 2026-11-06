@@ -200,7 +200,7 @@ async function answerQuest(a) {
   if (!a) return;
   say("me", `(to HR) ${a}`);
   try {
-    const r = await api("/api/quest", { answer: a });
+    const r = await api("/api/quest", { answer: a, step: level });
     if (r.ok) {
       for (const t of r.wrote || []) log("unlock", `✍️ FGA write: (${esc(t.user)}, ${esc(t.relation)}, ${esc(t.object)})`);
       log("info", `🪪 level read back from FGA: <b>${esc(r.career.title)}</b>`);
@@ -211,6 +211,7 @@ async function answerQuest(a) {
       say("bot", GREET[r.career.level]);
     } else {
       say("sys", `HR: ${r.line}`);
+      if (r.career && r.career.level !== level) { applyCareer(r.career, r.badge, true); level = r.career.level; drawBadge(); drawLadder(); drawChips(); }
     }
   } catch (e) {
     say("sys", "HR is on a coffee break. Try again.");
@@ -315,7 +316,7 @@ $("questForm").onsubmit = (e) => { e.preventDefault(); const v = $("questIn").va
 $("resetBtn").onclick = async () => {
   const r = await api("/api/reset", {});
   stats = { denied: 0, allowed: 0, tries: 0 }; topShown = false; bingo = {}; certShown = false; store.set("bingo", bingo); store.set("certShown", false); save(); drawStats(); drawBingo();
-  log("unlock", "↺ quit: your FGA tuples were deleted. Back to the lobby.");
+  log("unlock", `↺ quit: ${esc(r.oldUser || "your old user")}'s FGA tuples were deleted. You're a brand-new FGA user now: <b>${esc(r.badge?.user || "")}</b>`);
   const st = await api("/api/status");
   applyCareer(st.career, st.badge, true);
   level = st.career.level; drawBadge(); drawLadder(); drawChips();

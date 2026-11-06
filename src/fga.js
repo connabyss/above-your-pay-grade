@@ -102,7 +102,9 @@ export class Auth0Fga {
   }
 
   async check(user, relation, object) {
-    const body = { tuple_key: { user, relation, object } };
+    // HIGHER_CONSISTENCY: skip FGA's check cache, so a promotion, a quit or a revoked
+    // permission counts on the very next question (the cache can lag a write by seconds).
+    const body = { tuple_key: { user, relation, object }, consistency: "HIGHER_CONSISTENCY" };
     if (this.modelId) body.authorization_model_id = this.modelId;
     const j = await this.api("/check", body);
     return j.allowed === true;

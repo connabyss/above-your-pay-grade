@@ -234,15 +234,21 @@ export default {
     }
     if (url.pathname === "/api/quest") {
       if (who.level === 4) return json({ ok: false, line: "You're the CEO. You don't do quizzes.", career: career(4) }, { headers });
-      const r = await tryQuest(fga, who.badge.user, String(body.answer || "").slice(0, 200));
+      const r = await tryQuest(fga, who.badge.user, String(body.answer || "").slice(0, 200), body.step);
       const now = await whoIs(env, req, fga); // read the level back from FGA
       await playtest(env, req, playtestEvent("quest", who, { answer: String(body.answer || "").slice(0, 200), ok: r.ok, newLevel: now.level, line: r.line }));
       return json({ ...r, badge: now.badge, career: career(now.level) }, { headers });
     }
     if (url.pathname === "/api/reset") {
+      // a true clean slate: delete the old FGA tuples AND hand out a brand-new FGA user
       if (who.badge.player) await resetPlayer(fga, who.badge.user);
       await playtest(env, req, playtestEvent("reset", who, {}));
-      return json({ ok: true, career: career(0) }, { headers: { "set-cookie": "badge=; Path=/; Max-Age=0" } });
+      const id = [...crypto.getRandomValues(new Uint8Array(6))].map((b) => b.toString(16).padStart(2, "0")).join("");
+      const h = new Headers({ "content-type": "application/json", "cache-control": "no-store, private" });
+      h.append("set-cookie", "badge=; Path=/; Max-Age=0");
+      h.append("set-cookie", await playerCookie(env, id));
+      const user = `user:p_${id}`;
+      return new Response(JSON.stringify({ ok: true, oldUser: who.badge.user, badge: { user, name: `p_${id}`, role: LEVELS[0].role, dept: "", level: 0, player: true }, career: career(0) }), { headers: h });
     }
     if (url.pathname === "/api/compare") {
       await playtest(env, req, playtestEvent("just-show-me", who, {}));

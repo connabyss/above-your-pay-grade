@@ -50,8 +50,11 @@ export async function levelOf(fga, user) {
   return hr ? 3 : eng ? 2 : member ? 1 : 0;
 }
 
-export async function tryQuest(fga, user, answer) {
+export async function tryQuest(fga, user, answer, step) {
   const level = await levelOf(fga, user);
+  // an answer only counts for the quest the player is looking at
+  if (step !== undefined && step !== null && Number(step) !== level)
+    return { ok: false, level, stale: true, line: `HR checked your file: you're ${level ? "a " + LEVELS[level].name : "a Visitor"}, so that was the wrong form. Here's yours.` };
   const q = QUESTS[level];
   if (!q.answer) return { ok: false, level, line: "The Vault doesn't take quiz answers." };
   if (!q.answer.test(String(answer || ""))) return { ok: false, level, line: `Not quite. ${q.hint}` };

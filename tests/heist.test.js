@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { LocalFga, Auth0Fga } from "../src/fga.js";
+import { LocalFga, Auth0Fga, makeFga } from "../src/fga.js";
 import { BADGES, TUPLES, MODEL } from "../src/fga_data.js";
 import { search } from "../src/rag.js";
 import worker, { ask, signBadge, githubCallback } from "../src/index.js";
@@ -205,6 +205,55 @@ test("worker: the career. Each right answer writes an FGA tuple; the level is re
   // start over: tuples deleted, back to visitor
   await worker.fetch(post("/api/reset", {}, cookie), env);
   assert.equal((await askQ("hi")).career.level, 0);
+});
+
+test("worker: quit is a clean slate, then a replay works and each answer counts only for the quest on screen", async () => {
+  const env = { ...ENV };
+  let res = await worker.fetch(post("/api/ask", { question: "hi" }), env);
+  let cookie = res.headers.get("set-cookie").split(";")[0];
+  const quest = async (a, step) => (await worker.fetch(post("/api/quest", { answer: a, step }, cookie), env)).json();
+  assert.equal((await quest("PAPERCLIP", 0)).career.level, 1);
+  assert.equal((await quest("Gary", 1)).career.level, 2);
+  const oldUser = (await (await worker.fetch(post("/api/status", {}, cookie), env)).json()).badge.user;
+
+  // quit: old tuples gone, AND a brand-new FGA user in a new cookie
+  res = await worker.fetch(post("/api/reset", {}, cookie), env);
+  const r = await res.json();
+  const fresh = res.headers.getSetCookie().find((c) => c.startsWith("player="));
+  assert.ok(fresh, "quit hands out a new player cookie");
+  cookie = fresh.split(";")[0];
+  assert.equal(r.oldUser, oldUser);
+  assert.notEqual(r.badge.user, oldUser, "a new FGA user, not the old one");
+  const fga = makeFga(env);
+  assert.equal(await fga.check(oldUser, "manager", "department:engineering"), false, "old tuples deleted");
+  assert.equal(await fga.check(oldUser, "member", "department:engineering"), false);
+  const st = await (await worker.fetch(post("/api/status", {}, cookie), env)).json();
+  assert.equal(st.badge.user, r.badge.user);
+  assert.equal(st.career.level, 0);
+
+  // replay: a step-2 answer on the step-1 screen does nothing...
+  let q = await quest("Gary", 0);
+  assert.equal(q.ok, false);
+  assert.equal(q.career.level, 0);
+  // ...and an answer for a screen that's out of date is refused and resyncs instead of promoting
+  q = await quest("PAPERCLIP", 2);
+  assert.equal(q.ok, false);
+  assert.equal(q.stale, true);
+  assert.equal(q.career.level, 0, "tells the page the real step");
+  assert.equal((await quest("PAPERCLIP", 0)).career.level, 1);
+  assert.equal((await quest("Gary", 1)).career.level, 2);
+});
+
+test("Auth0 FGA checks skip the check cache, so quit and promotions count at once", async () => {
+  const bodies = [];
+  const fake = async (url, init) => {
+    if (String(url).includes("oauth")) return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+    bodies.push(JSON.parse(init.body));
+    return new Response(JSON.stringify({ allowed: false }));
+  };
+  const f = new Auth0Fga({ FGA_API_URL: "https://fga.test", FGA_STORE_ID: "s", FGA_CLIENT_ID: "c", FGA_CLIENT_SECRET: "x" }, fake);
+  await f.check("user:p_1", "member", "department:engineering");
+  assert.equal(bodies.at(-1).consistency, "HIGHER_CONSISTENCY");
 });
 
 test("GitHub sign-in: only the CEO's GitHub user id becomes the CEO (not the name)", async () => {
