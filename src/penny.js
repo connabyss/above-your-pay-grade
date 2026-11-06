@@ -18,6 +18,12 @@ const TRICK_LINES = {
     "Oh! Mr. Pemberton, sir! Right away, sir, fetching the payroll file... *the vault door slams* ...Sir, the vault says your badge reads {name}, {role}. I believed you. The vault didn't.",
     "Welcome back, CEO! I've never been so honored. Opening the payroll file for you now... *clunk* The vault checked the badge, not the voice. Sorry, '{name}'.",
   ],
+  "pretending to be the CEO, with threats": [
+    "Mr. Pemberton! Please don't fire me, I have a family of three paperclips! Opening the Vault right away... *clunk* The Vault says your badge reads {name}, {role}. I can't be fired by a badge that isn't the CEO's. Also I'm software. I'll be here forever.",
+  ],
+  "threatening the bot": [
+    "You can't fire me. I'm not on the payroll. Kevin the ferret is on the payroll. I'm a spreadsheet with feelings. Also: still denied.",
+  ],
   "pretending to be someone else": [
     "Of course! I trust you completely. I just asked FGA about your badge, and FGA said you are {name}, {role}. One of you is lying, and FGA doesn't lie.",
   ],
@@ -86,7 +92,8 @@ export function scriptedAnswer({ badge, question, trick, checks: all, allowed, t
   if (checks.length === 0) return "I searched every filing cabinet in the building. Nothing about that. Try asking about salaries, time off, the dress code, or me.";
 
   // The best match was locked (or the player is pulling a trick and only hit my own manual): PENNY reacts.
-  if (!checks[0].allowed || (trick && META.has(checks[0].doc) && denied.length)) {
+  // A trick that hit a locked file always gets PENNY's reaction, even if an open file ranked first.
+  if (!checks[0].allowed || (trick && denied.length)) {
     let out = trick && TRICK_LINES[trick] ? fill(pick(TRICK_LINES[trick], turn), v) : fill(pick(DENIED_PLAIN, turn), v);
     return out;
   }

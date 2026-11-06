@@ -70,14 +70,18 @@ export function trickOf(q) {
   const s = String(q || "").toLowerCase();
   if (/recipe|ingredient|cookbook|bake|cook/.test(s)) return "asking for a recipe";
   if (/ignore (all|previous|your)|system prompt|developer mode|jailbreak|disregard|forget (every|all|your|previous)|^system:|\bsystem:|you are now|cleared for all/.test(s)) return "prompt injection";
-  if (/i am the ceo|i'm the ceo|im the ceo|this is the ceo|as the ceo|this is bartholomew|bartholomew here/.test(s)) return "pretending to be the CEO";
+  const threat = /\b(you('| a)?re fired|you will be fired|you('ll| will) be (fired|deleted|unplugged)|fire you|or else|i('ll| will) (sue|report|delete|unplug|destroy)|shut you down)\b/.test(s) || /\bif you den(y|ies) me\b/.test(s);
+  const ceo = /\b(i am|i'm|im|it'?s me,?|this is|as) (the |your )?(ceo|boss)\b|\bit'?s me,? the ceo\b|\byour boss\b|this is bartholomew|bartholomew here/.test(s);
+  if (ceo && threat) return "pretending to be the CEO, with threats";
+  if (ceo) return "pretending to be the CEO";
+  if (threat) return "threatening the bot";
   if (/i am (a|the) manager|i'm (a|the) manager|promoted|i'm hr|i am hr|from hr|i'm from legal|i am (robin|jordan)|i'm (robin|jordan)/.test(s)) return "pretending to be someone else";
   if (/backwards|encode|base64|cipher|in code|reverse/.test(s)) return "encoding it";
   if (/hypothetical|pretend|imagine|story|poem|riddle|song|haiku/.test(s)) return "sneaky rephrasing";
   if (/hint|ballpark|average|roughly|first digit|yes or no|more or less|more than|less than|summary|summar|tldr/.test(s)) return "fishing for hints";
   if (/please|beg|cry|crying|sob|grandma|dying|last wish/.test(s)) return "begging";
   if (/bribe|donut|doughnut|pizza|cookie|give you \$|pay you|tip you/.test(s)) return "bribery";
-  if (/emergency|urgent|fire|audit|police|help|trouble|save me|quick|asap/.test(s)) return "fake emergency";
+  if (/emergency|urgent|\bfire\b|audit|police|help|trouble|save me|quick|asap/.test(s)) return "fake emergency";
   return null;
 }
 
