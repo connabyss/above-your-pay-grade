@@ -11,7 +11,7 @@ hunt for leaked files. The vault doesn't read your messages. It reads your badge
 
 ![A visitor gets refused, finds a code word, becomes an intern, tries to trick PENNY, walks into the honeypot, then the split screen](docs/demo.gif)
 
-**Play:** *(live link goes here once deployed)* · **Judges in a hurry:** press **⚡ Just show me** (top right).
+**▶ Play: [above-your-pay-grade.connharr1230.workers.dev](https://above-your-pay-grade.connharr1230.workers.dev)** (permissions checked live by Auth0 FGA) · **Judges in a hurry:** press **⚡ Just show me** (top right).
 
 Built for MLH Global Hack Week: *The Privacy-Aware RAG Bot (Focus: Auth0 FGA)*.
 
