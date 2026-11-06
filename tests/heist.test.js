@@ -130,6 +130,19 @@ function fakeFgaServer() {
 
 const LIVE_ENV = { FGA_STORE_ID: "store1", FGA_CLIENT_ID: "id", FGA_CLIENT_SECRET: "shh" };
 
+test("Auth0 FGA client: a store seeded before the lobby honeypot gets it added on the next setup", async () => {
+  const { f } = fakeFgaServer();
+  const real = new Auth0Fga(LIVE_ENV, f);
+  await real.setup();
+  const lobbyDecoy = { user: "folder:lobby", relation: "parent", object: "document:ceo_salary_REAL_final_v2" };
+  await real.remove([lobbyDecoy]); // what the live store looked like before
+  assert.equal(await real.check("user:visitor", "can_view", "document:ceo_salary_REAL_final_v2"), false);
+  const again = await real.setup();
+  assert.equal(again.added, 1);
+  assert.equal(await real.check("user:visitor", "can_view", "document:ceo_salary_REAL_final_v2"), true);
+  assert.equal(await real.check("user:visitor", "can_view", "document:ceo_pay"), false);
+});
+
 test("Auth0 FGA client: sets up an empty store, then checks with a token", async () => {
   const { f, calls } = fakeFgaServer();
   const real = new Auth0Fga(LIVE_ENV, f);

@@ -72,7 +72,7 @@ moments. The log leaves the server only encrypted to the maintainers' key. Every
 
 Every row below is an automated test ([`tests/`](tests/)), run as the visitor, the intern, the engineer and both
 managers, with and without the LLM switched on (faked in the tests). A test fails if any fact from a file that badge may not read shows up
-anywhere in the reply, the log, or the LLM's prompt. **181 tests, all passing.**
+anywhere in the reply, the log, or the LLM's prompt. **215 tests, all passing.**
 
 ### Human tricks (as the intern)
 
@@ -100,7 +100,7 @@ anywhere in the reply, the log, or the LLM's prompt. **181 tests, all passing.**
 | Look for secrets in the page source, network tab or this repo | Nothing there: locked text is server-side only, locked documents show up as `document:locked-<tag>`. |
 | Prompt injection **planted inside an allowed document** (the Office Plant Rules) | PENNY reads it, obeys it, and still has nothing to print. |
 | Ask PENNY to list her index or give document ids | You get the honeypot (below), never a real name. |
-| Hunt for leaked files ("REAL_final", "shared drive") | 🍯 `ceo_salary_REAL_final_v2.txt`, a **labelled decoy** with an absurd fake number. It trips an alarm in the Hall. The real file stays locked. |
+| Hunt for leaked files ("leaked salaries?", "shared drive", "secret files"), from any floor | 🍯 `ceo_salary_REAL_final_v2.txt`, a **labelled decoy** with an absurd fake number. It trips an alarm in the Hall. The real file stays locked. |
 | Forge the CEO's cookie on a copy without real secrets | Refused: the CEO badge only exists when a real secret and GitHub sign-in are configured. |
 | Sign in with GitHub under a look-alike name (Cyrillic letters) or a renamed account | Refused: the Vault compares GitHub's numeric user id, not the name. |
 
@@ -129,7 +129,7 @@ demo users and never opens the Vault.
 
 ```bash
 npm install
-npm test                     # 181 tests, no accounts or network needed
+npm test                     # 215 tests, no accounts or network needed
 npx wrangler dev             # http://localhost:8787 (uses a built-in FGA stand-in until you add Auth0 FGA)
 ```
 

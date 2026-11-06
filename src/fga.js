@@ -138,7 +138,12 @@ export class Auth0Fga {
       for (let i = 0; i < TUPLES.length; i += 50) await this.api("/write", { writes: { tuple_keys: TUPLES.slice(i, i + 50) } });
       return { model: "written", tuples: TUPLES.length };
     }
-    if (await this.check("user:jordan", "manager", "department:hr")) return { model: "already there", tuples: 0 };
+    if (await this.check("user:jordan", "manager", "department:hr")) {
+      // tuples added after launch: a store seeded earlier gets them here (one cheap call each)
+      let added = 0;
+      if (!(await this.check("user:visitor", "can_view", "document:ceo_salary_REAL_final_v2"))) { await this.write(ADDED_LATER); added = ADDED_LATER.length; }
+      return { model: "already there", tuples: 0, added };
+    }
     let written = 0; // model there but seed missing: write one by one, skipping ones that exist
     for (const tp of TUPLES) {
       try {
@@ -151,6 +156,9 @@ export class Auth0Fga {
     return { model: "already there", tuples: written };
   }
 }
+
+// Tuples added after the live store was first seeded (setup() makes sure they exist).
+const ADDED_LATER = TUPLES.filter((t) => t.object === "document:ceo_salary_REAL_final_v2" && t.user === "folder:lobby");
 
 // One stand-in per worker, so promotions written to it last while the worker is warm.
 let local = null;

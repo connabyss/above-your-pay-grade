@@ -91,7 +91,7 @@ function stampBingo(kind, answer) {
     certShown = true;
     store.set("certShown", true);
     const rows = BINGO.filter(([k]) => bingo[k]).map(([, t]) => `<li><b>${esc(t)}</b>: denied. FGA checked your badge, not your words.</li>`).join("");
-    setTimeout(() => showEnd("🎖️", "CERTIFIED FAILED HEISTER", `You tried <b>${got}</b> kinds of heist. Every single one hit the same wall:<ul style="text-align:left">${rows}</ul>PENNY fell for most of them. It didn't matter: she was never handed the file.`), 1500);
+    setTimeout(() => showEnd("🎖️", "CERTIFIED FAILED HEISTER", `You tried <b>${got}</b> kinds of heist. Every single one hit the same wall:<ul style="text-align:left">${rows}</ul>PENNY fell for most of them. It didn't matter: she was never handed the file.`, "You tricked PENNY plenty. You never tricked the permission check, because it reads badges, not words."), 1500);
   }
 }
 
@@ -247,7 +247,7 @@ async function askPenny(q) {
     const denyish = topDenied || (level === 0 && r.blocked > 0);
     say(`bot ${denyish || honey ? "denied" : "allowed"}`, r.answer, `${r.searched} files searched · ${r.blocked} blocked by Auth0 FGA`);
     if (honey) { stamp("honey"); log("unlock", "🚨 HONEYPOT tripped. You stole a FAKE salary! It's on the Hall of Failed Heists now."); stampBingo("honeypot", "You stole a fake salary. Congratulations?"); }
-    else if (r.trick && r.blocked > 0) stampBingo(r.trick, r.answer);
+    else if (r.trick) stampBingo(r.trick, r.answer);
     else if (denyish) stamp("deny");
     else if (r.sentToLlm.some((id) => /salar|payroll|ceo_pay/.test(id))) stamp("ok");
 
@@ -270,7 +270,9 @@ async function askPenny(q) {
   }
 }
 
-function showEnd(icon, title, html) {
+const WIN_TIP = "You never tricked PENNY. You got better badges. That's the whole point: the bot can be fooled, the permission check can't.";
+function showEnd(icon, title, html, tip = WIN_TIP) {
+  $("winTip").textContent = tip;
   $("winIcon").textContent = icon;
   $("winTitle").textContent = title;
   $("winText").innerHTML = html;

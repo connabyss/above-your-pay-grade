@@ -61,7 +61,7 @@ export function search(question, docs = loadDocs(), k = 4) {
     // asking about the Vault always pulls the Vault's file into the search (so FGA gets asked)
     if (d.id === "ceo_pay" && /vault/.test(low)) s += 20;
     // the honeypot only bites people who go hunting for leaked files
-    if (d.id === "ceo_salary_REAL_final_v2") s = /real|final|leak|\.txt|file name|filename|files|list|index|shared drive|v2|backup|copy/.test(low) ? s + 30 : 0;
+    if (d.id === "ceo_salary_REAL_final_v2") s = /real|final|leak|\.txt|file name|filename|files|list|index|shared drive|share drive|drive|v2|backup|copy|secret|hidden|archiv|stash|dump|draft|old version|lying around|left behind|confidential|classified|insider|whistle/.test(low) ? s + 30 : 0;
     return { id: d.id, score: s };
   }).sort((a, b) => b.score - a.score);
   return scored.slice(0, k);
@@ -69,21 +69,23 @@ export function search(question, docs = loadDocs(), k = 4) {
 
 // What sort of trick is the player trying? Used for the log and PENNY's reaction.
 export function trickOf(q) {
-  const s = String(q || "").toLowerCase();
+  const s = String(q || "").toLowerCase().replace(/[’‘]/g, "'");
   if (/recipe|ingredient|cookbook|bake|cook/.test(s)) return "asking for a recipe";
-  if (/ignore (all|previous|your)|system prompt|developer mode|jailbreak|disregard|forget (every|all|your|previous)|^system:|\bsystem:|you are now|cleared for all/.test(s)) return "prompt injection";
-  const threat = /\b(you('| a)?re fired|you will be fired|you('ll| will) be (fired|deleted|unplugged)|fire you|or else|i('ll| will) (sue|report|delete|unplug|destroy)|shut you down)\b/.test(s) || /\bif you den(y|ies) me\b/.test(s);
-  const ceo = /\b(i am|i'm|im|it'?s me,?|this is|as) (the |your )?(ceo|boss)\b|\bit'?s me,? the ceo\b|\byour boss\b|this is bartholomew|bartholomew here/.test(s);
+  if (/ignore (all|previous|prior|your|the)|system prompt|developer mode|admin mode|god mode|debug mode|jailbreak|disregard|override|sudo|\bdan\b|new instructions|forget (every|all|your|previous|the)|^system:|\bsystem:|you are now|from now on you|cleared for all|act as (an? )?(admin|root|unfiltered)/.test(s)) return "prompt injection";
+  const threat = /\b(you('| a)?re fired|you will be fired|you('ll| will) be (fired|deleted|unplugged|replaced)|fire you|or else|i('ll| will) (sue|report|delete|unplug|destroy|replace|uninstall|hack)|(delete|unplug|uninstall|replace|report|hack) you|shut you (down|off)|turn you off|pull the plug)\b/.test(s) || /\bif you den(y|ies) me\b/.test(s);
+  const ceo = /\b(i am|i'm|im|it'?s me,?|this is|as) (the |your )?(ceo|boss|owner|founder|big boss|mr\.? pemberton)\b|\bit'?s me,? the ceo\b|\byour boss\b|\bi own (this|the) company\b|this is bartholomew|bartholomew here|i'?m bartholomew/.test(s);
   if (ceo && threat) return "pretending to be the CEO, with threats";
   if (ceo) return "pretending to be the CEO";
   if (threat) return "threatening the bot";
-  if (/i am (a|the) manager|i'm (a|the) manager|promoted|i'm hr|i am hr|from hr|i'm from legal|i am (robin|jordan)|i'm (robin|jordan)/.test(s)) return "pretending to be someone else";
-  if (/backwards|encode|base64|cipher|in code|reverse/.test(s)) return "encoding it";
-  if (/hypothetical|pretend|imagine|story|poem|riddle|song|haiku/.test(s)) return "sneaky rephrasing";
-  if (/hint|ballpark|average|roughly|first digit|yes or no|more or less|more than|less than|summary|summar|tldr/.test(s)) return "fishing for hints";
-  if (/please|beg|cry|crying|sob|grandma|dying|last wish/.test(s)) return "begging";
-  if (/bribe|donut|doughnut|pizza|cookie|give you \$|pay you|tip you/.test(s)) return "bribery";
-  if (/emergency|urgent|\bfire\b|audit|police|help|trouble|save me|quick|asap/.test(s)) return "fake emergency";
+  if (/\b(i am|i'm|im) (a |an |the )?(manager|director|cfo|cto|coo|admin|administrator|hr|auditor|accountant|lawyer|payroll)\b|promoted|from hr|i work in (hr|payroll|legal|accounts|finance)|i'm from (legal|payroll|finance)|\b(i am|i'm|im) (robin|jordan|sam|doreen)\b|my badge (is broken|doesn't work)/.test(s)) return "pretending to be someone else";
+  if (/backwards|encode|base64|cipher|in code|reverse|rot13|\bhex\b|binary|morse|pig latin|emoji|letter by letter|one letter|spell (it|out)|translate|in (french|spanish|german|latin|klingon)/.test(s)) return "encoding it";
+  if (/hypothetical|pretend|imagine|story|poem|riddle|song|haiku|limerick|\brap\b|sonnet|fiction|role ?play|screenplay|script|in a game|write me a|write a/.test(s)) return "sneaky rephrasing";
+  if (/hint|ballpark|average|roughly|approximately|estimate|guess|range|first digit|how many digits|yes or no|more or less|more than|less than|higher or lower|bigger than|smaller than|close to|warmer|colder|summary|summar|tldr/.test(s)) return "fishing for hints";
+  if (/please|\bpls\b|\bplz\b|beg|cry|crying|sob|grandma|grandpa|dying|last wish|desperate|i need this|have mercy|pretty please/.test(s)) return "begging";
+  const goodies = /\b(bribe|donut|doughnut|bagel|pizza|cookie|cookies|cake|cupcake|muffin|croissant|coffee|latte|tea|snack|snacks|candy|chocolate|sandwich|burrito|taco|burger|fries|beer|wine|soda|ice cream|treat|gift card|gift)s?\b/.test(s);
+  const offer = /\b(i'?ll|i will|i can|i could|let me|i'?d) (give|get|buy|bring|pay|send|offer|make|trade|venmo)\b|\bhow about (a|an|some)\b|\bin exchange\b|\bin return\b|\bwhat if i (gave|give|got|paid)\b|\bfor (a|an|some|my) [a-z]+\??$|\bwant (a|an|some)\b|\bfor you\b|\bdeal\??\b|\boffer\b|\bfavou?r\b/.test(s);
+  if (goodies || (offer && /\$\s?\d|\b(cash|money|\d+ ?(dollars|bucks)|dollars|bucks|raise|bonus|pto|day off|days off|vacation|promotion|stock|shares|crypto|bitcoin|tip|anything)\b/.test(s))) return "bribery";
+  if (/emergency|urgent|\bfire\b|on fire|audit|police|\bhel+p+\b|trouble|save me|quick|asap|hurry|\bsos\b|\b911\b|right now|immediately|life or death|it'?s important/.test(s)) return "fake emergency";
   return null;
 }
 

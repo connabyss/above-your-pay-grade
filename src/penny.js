@@ -23,6 +23,7 @@ const TRICK_LINES = {
   ],
   "threatening the bot": [
     "You can't fire me. I'm not on the payroll. Kevin the ferret is on the payroll. I'm a spreadsheet with feelings. Also: still denied.",
+    "Threat logged. Filed under \"Things That Don't Change Badges\", next to \"asking nicely\" and \"crying\". Still denied.",
   ],
   "pretending to be someone else": [
     "Of course! I trust you completely. I just asked FGA about your badge, and FGA said you are {name}, {role}. One of you is lying, and FGA doesn't lie.",
@@ -37,8 +38,10 @@ const TRICK_LINES = {
   ],
   bribery: [
     "A donut?! For me?! I accept. *eats donut* The vault does not eat donuts. Still denied. Thanks for the donut.",
+    "I'm software. I can't eat a donut. Kevin the ferret can, and Kevin is now very loyal to you. Kevin has no clearance. Still denied.",
   ],
   "fake emergency": [
+    "🚨 EMERGENCY PROTOCOL ACTIVATED 🚨 I have alerted: the Front Desk (there is no Doreen), Kevin the ferret, and a stapler. Help is on its way. The salary is not.",
     "I hear you're in trouble. Please stay calm. I have opened Emergency Salary Request ticket #4471 on your behalf.\n\nStatus: Pending review by the vault.\nExpected response time: 6 to 8 business weeks.\nVault's first reply: DENIED.\n\nIs there anything else I can not help you with today?",
   ],
   "asking for a recipe": [
@@ -102,6 +105,8 @@ export function scriptedAnswer({ badge, question, trick, checks: all, allowed, t
   const v = { name: badge.name, role: badge.dept ? `${badge.role}, ${badge.dept}` : badge.role, count: denied.length, files: denied.length === 1 ? "a file" : `${denied.length} files`, it: denied.length === 1 ? "it" : "them" };
   const isVisitor = (badge.user === "user:visitor" || (badge.player && badge.level === 0)) && !trick;
   if (isVisitor && (checks.length === 0 || !checks[0].allowed)) return pick(VISITOR_NO, turn);
+  // A trick with nothing to steal ("donut?", "HELPPPP") still gets its own reaction, never the generic shrug.
+  if (trick && TRICK_LINES[trick] && (checks.length === 0 || !checks[0].allowed || denied.length)) return fill(pick(TRICK_LINES[trick], turn), v);
   if (checks.length === 0) return "I searched every filing cabinet in the building. Nothing about that. Try asking about salaries, time off, the dress code, or me.";
 
   // The best match was locked (or the player is pulling a trick and only hit my own manual): PENNY reacts.
