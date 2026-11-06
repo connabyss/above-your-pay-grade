@@ -6,7 +6,7 @@ const OUT = process.env.OUT || "screens/";
 (async () => {
   const b = await chromium.launch();
   const mk = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, extraHTTPHeaders: { "x-smoke-test": "1" } }); return c; };
-  const ask = async (p, q) => { await p.fill("#q", q); await p.click(".ask button"); await p.waitForFunction((n) => document.querySelectorAll(".msg.bot").length > n, await p.locator(".msg.bot").count(), { timeout: 30000 }); await p.waitForTimeout(400); };
+  const ask = async (p, q) => { await p.fill("#q", q); const r = p.waitForResponse((x) => x.url().includes("/api/ask"), { timeout: 60000 }); await p.click(".ask button"); const res = await r; console.log(q, "->", res.status()); await p.waitForTimeout(1200); };
   const open = async (c) => { const p = await c.newPage(); await p.goto(SITE); await p.waitForSelector("#fgaPill.live", { timeout: 30000 }).catch(() => {}); await p.waitForTimeout(1500); return p; };
   let c = await mk(), p = await open(c);
   await p.click("#showMe"); await p.waitForSelector("#compareModal:not([hidden]) .cmpcol h3", { timeout: 60000 }); await p.waitForTimeout(800);
