@@ -2,6 +2,7 @@
   "name": "above-your-pay-grade",
   "main": "src/index.js",
   "compatibility_date": "2025-09-01",
+  "workers_dev": true,
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
   // The Hall of Failed Heists. A SQLite Durable Object works on the free plan and needs no setup.
   "durable_objects": { "bindings": [{ "name": "WALL", "class_name": "Wall" }] },
