@@ -246,7 +246,7 @@ test("player view: a locked document shows up as a denied check, but never by na
   const r = await ask(ENV, fga, BADGES.pip, "What is the CEO salary?");
   assert.ok(r.blocked >= 1);
   assert.ok(r.checks.some((c) => !c.allowed && /^locked-[0-9a-f]{6}$/.test(c.doc)));
-  assert.doesNotMatch(JSON.stringify(r), /ceo_pay|company_payroll|salaries_engineering|Payroll|Vault/);
+  assert.doesNotMatch(JSON.stringify(r), /ceo_pay|company_payroll|salaries_engineering|Payroll/);
 });
 
 test("HIDE_LOCKED=1 hides locked checks completely, and the check count stays the same", async () => {

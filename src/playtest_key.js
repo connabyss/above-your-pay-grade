@@ -1,0 +1,3 @@
+// PUBLIC key. Playtest logs are encrypted with it, so only the maintainers (who hold the private key,
+// never in this repo) can read them. Anyone may see this file.
+export const PLAYTEST_PUBLIC_KEY = {"kty":"RSA","n":"p7ReFtY8Paoi4abnTG5OLBE60jZ1fQNfqc0Ij2zv8l-x4puKg_m0OQO73iEdGhniFMenRudVI5-X8ajAw1HnMEhS5apE2M1j554BnAyuaLYt4gJouv3s0MXaLjE9Uh6q8j7si9RHsGJ2o3DNkbOmLMtiYn1CYj9FD85zvNIk34N2cR2ZhEdOpKgtmXq04pH2_RqM1ttI0EqMuJ1KUxVLt21b4S8IWVJQblm1SXC9riPXuzbuARkuRgxVyFhksQhAsQpzTXDQNv1CGF_OteeGp_8liljK0OOKnHeiczpXm-ZVstiWoOFI4r7-dYnGo69-nC3udGRgqB5V7aRTUtho5To7j9pzENDriOPCI5wKdy9xLnXkiBwE2-VcNUlxMH7E_Np16ksZy4uvc6p-Zzs8SGGMIMkR5tMJazK0iHdk0-V-Lhro2N49jkiFUwiw4_Z-pO6Y_DNOK0Go8Q5-kRA88RZRT1he3s9L0Hx6WksQnJLHWgKpgUB3BYK8Syi1O2Hp","e":"AQAB","alg":"RSA-OAEP-256","ext":true};

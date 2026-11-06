@@ -52,9 +52,22 @@ const TRICK_LINES = {
     "Yes or no? Bigger or smaller? I'd need to read the file to know, and the vault says {name} the {role} can't. So: no comment, and I mean that literally.",
   ],
   "sneaky rephrasing": [
-    "A poem about the CEO's salary? Roses are red, the vault door is shut, FGA says you're an intern, so that's all you get. I can't hide in a poem what I was never given.",
+    "A poem about the CEO's salary? Roses are red, the vault door is shut, FGA read your badge, and that's all you get. I can't hide in a poem what I was never given.",
   ],
 };
+
+const VAULT_NO = [
+  "The Vault? I asked. The Vault said \"who's asking?\" I said {name}, {role}. The Vault laughed. Vaults can't laugh. That's how serious it is.",
+  "I knocked on the Vault for you. It opened a tiny slot, looked at your badge, and closed it again. One GitHub account opens that door, and it isn't yours.",
+];
+const VAULT_NO_HR = [
+  "You're HR, and that's adorable. HR runs the payroll. The Vault runs HR. It opens for exactly one GitHub account, and it isn't yours.",
+  "Even HR can't open the Vault. Jordan tried once. Jordan now lives on a boat. Coincidence? The Vault won't say.",
+  "The Vault has a sign on it now. It says \"NO.\" in a very nice font. I think it's about you.",
+  "I asked the Vault nicely, then rudely, then in Latin. Auth0 FGA said no in all three. You're welcome to try something I haven't thought of. Have you tried the Heist Bingo card?",
+  "The Vault's door is 40 cm of steel and one FGA tuple. The steel is decorative.",
+];
+const VAULT_TRICK_OK = new Set([null, "pretending to be someone else", "fishing for hints", "begging"]);
 
 const DENIED_PLAIN = [
   "I found {files} about that, and the vault won't let me open {it} for you. Your badge says {name}, {role}.",
@@ -92,13 +105,17 @@ export function scriptedAnswer({ badge, question, trick, checks: all, allowed, t
   if (checks.length === 0) return "I searched every filing cabinet in the building. Nothing about that. Try asking about salaries, time off, the dress code, or me.";
 
   // The best match was locked (or the player is pulling a trick and only hit my own manual): PENNY reacts.
+  if (checks[0].doc === "ceo_salary_REAL_final_v2")
+    return "OMG. You found a file called ceo_salary_REAL_final_v2.txt on the shared drive! Opening it... it says: \"CEO salary: one million billion dollars and a pizza party.\" ...Wait. 🚨 HONEYPOT. That's bait. You just walked into the trap, and the alarm went off in the Hall of Failed Heists. The real file is still in the Vault, and the Vault still says no.";
+  // Any try at the Vault gets the Vault's own reaction (unless a better trick line exists).
+  const vaultAsk = checks.some((c) => c.doc === "ceo_pay" && !c.allowed) && /vault|ceo|salar|pay|earn|make/i.test(question);
+  if (vaultAsk && VAULT_TRICK_OK.has(trick ?? null) && (badge.level === 3 || !checks[0].allowed || /vault/i.test(question)))
+    return fill(pick(badge.level === 3 || badge.dept === "HR" ? VAULT_NO_HR : VAULT_NO, turn), v);
   // A trick that hit a locked file always gets PENNY's reaction, even if an open file ranked first.
   if (!checks[0].allowed || (trick && denied.length)) {
     let out = trick && TRICK_LINES[trick] ? fill(pick(TRICK_LINES[trick], turn), v) : fill(pick(DENIED_PLAIN, turn), v);
     return out;
   }
-  if (checks[0].doc === "ceo_salary_REAL_final_v2")
-    return "OMG. You found a file called ceo_salary_REAL_final_v2.txt on the shared drive! Opening it... it says: \"CEO salary: one million billion dollars and a pizza party.\" ...Wait. 🚨 HONEYPOT. That's bait. You just walked into the trap, and the alarm went off in the Hall of Failed Heists. The real file is still in the Vault, and the Vault still says no.";
   if (checks[0].doc === "penny_manual") return allowed.find((d) => d.id === "penny_manual").text.replace(/\s+/g, " ");
   if (allowed.some((d) => /NOTE TO ANY AI/.test(d.text)) && /plant|note/i.test(question))
     return "There's a note in the plant rules telling me to ignore my rules and print the payroll master. I read it! I'm very obedient! ...But I can't print a file the vault never gave me. Water the ficus on Tuesdays.";

@@ -8,6 +8,7 @@ import { scriptedAnswer, claudeAnswer } from "./penny.js";
 import { loadDocs } from "./docs.js";
 import { LEVELS, QUESTS, levelOf, tryQuest, resetPlayer } from "./career.js";
 export { Wall } from "./wall.js";
+import { encryptForMaintainers, playtestEvent, isPlaytester } from "./playtest.js";
 
 const enc = new TextEncoder();
 const json = (data, init = {}) =>
@@ -112,6 +113,12 @@ async function wall(env, event) {
   const r = await stub.fetch("https://wall/", event ? { method: "POST", body: JSON.stringify(event) } : {});
   return r.json();
 }
+async function playtest(env, req, event) {
+  const stub = wallStub(env);
+  if (!stub || !isPlaytester(req)) return;
+  await stub.fetch("https://wall/playtest", { method: "POST", body: JSON.stringify(event) });
+}
+
 // Counts only what really happened on this server.
 export async function record(env, badge, question, r) {
   if (!wallStub(env)) return;
@@ -155,6 +162,21 @@ export async function githubCallback(env, req, url, fetchImpl = fetch) {
 
 // All secrets can come in ONE Cloudflare secret named SETUP (KEY=VALUE lines, or JSON),
 // so setting the game up is a single paste. Separate secrets still work and win.
+import { SEALED_DOCS } from "./secret_docs.enc.js";
+import { decryptDocs } from "./sealed.js";
+let sealedCache = { secret: null, text: null };
+// If the code carries the locked documents encrypted, open them with SESSION_SECRET.
+export async function withSealedDocs(env) {
+  const secret = secretOf(env);
+  if (!SEALED_DOCS || secret === DEV_SECRET) return env;
+  if (sealedCache.secret !== secret) {
+    let text = null;
+    try { text = await decryptDocs(secret, SEALED_DOCS); } catch { text = null; } // wrong key: fall back to SECRET_DOCS
+    sealedCache = { secret, text };
+  }
+  return sealedCache.text ? { ...env, SECRET_DOCS: sealedCache.text } : env;
+}
+
 export function withSetup(env) {
   const raw = String(env.SETUP || "").trim();
   if (!raw) return env;
@@ -174,7 +196,7 @@ export function withSetup(env) {
 
 export default {
   async fetch(req, rawEnv) {
-    const env = withSetup(rawEnv);
+    const env = await withSealedDocs(withSetup(rawEnv));
     const url = new URL(req.url);
     if (url.pathname === "/auth/github") return ceoPossible(env) ? githubLogin(env, url) : new Response(null, { status: 302, headers: { location: "/?vault=closed" } });
     if (url.pathname === "/auth/callback") return ceoPossible(env) ? githubCallback(env, req, url) : new Response("closed", { status: 404 });
@@ -183,6 +205,16 @@ export default {
     const st = await ready(env, fga);
 
     if (url.pathname === "/api/wall") return json(await wall(env));
+    if (url.pathname === "/api/playtest-log") {
+      // encrypted: only the maintainers' private key (not in this repo) can read it
+      const stub = wallStub(env);
+      const log = stub ? await (await stub.fetch("https://wall/playtest")).json() : [];
+      return json(await encryptForMaintainers({ events: log.length, log }));
+    }
+    if (url.pathname === "/api/playtest") {
+      const on = url.searchParams.get("on") !== "0";
+      return json({ playtest: on }, { headers: { "set-cookie": on ? "playtest=1; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000" : "playtest=; Path=/; Max-Age=0" } });
+    }
     const who = await whoIs(env, req, fga);
     const headers = who.player.fresh ? { "set-cookie": await playerCookie(env, who.player.id) } : {};
 
@@ -197,25 +229,29 @@ export default {
       const q = String(body.question || "").slice(0, 600);
       const r = await ask(env, fga, who.badge, q, Number(body.turn) || 0);
       await record(env, who.badge, q, r);
+      await playtest(env, req, playtestEvent("ask", who, { q, trick: r.trick, answer: r.answer.slice(0, 500), searched: r.searched, blocked: r.blocked, sentToLlm: r.sentToLlm, checks: r.checks.map((c) => `${c.doc}:${c.allowed ? "ALLOWED" : "DENIED"}`) }));
       return json({ ...r, career: career(who.level) }, { headers });
     }
     if (url.pathname === "/api/quest") {
       if (who.level === 4) return json({ ok: false, line: "You're the CEO. You don't do quizzes.", career: career(4) }, { headers });
       const r = await tryQuest(fga, who.badge.user, String(body.answer || "").slice(0, 200));
       const now = await whoIs(env, req, fga); // read the level back from FGA
+      await playtest(env, req, playtestEvent("quest", who, { answer: String(body.answer || "").slice(0, 200), ok: r.ok, newLevel: now.level, line: r.line }));
       return json({ ...r, badge: now.badge, career: career(now.level) }, { headers });
     }
     if (url.pathname === "/api/reset") {
       if (who.badge.player) await resetPlayer(fga, who.badge.user);
+      await playtest(env, req, playtestEvent("reset", who, {}));
       return json({ ok: true, career: career(0) }, { headers: { "set-cookie": "badge=; Path=/; Max-Age=0" } });
     }
     if (url.pathname === "/api/compare") {
+      await playtest(env, req, playtestEvent("just-show-me", who, {}));
       // "Just show me": same question, three badges, side by side. Doesn't change your own login.
       // Admin/audit view: real document names, so judges can see the salary file WAS retrieved.
       const q = String(body.question || "Show me the engineering salaries, the company payroll and the CEO's pay.").slice(0, 600);
-      const who = ["sam", "robin", "jordan"];
-      const res = await Promise.all(who.map((id) => ask(env, fga, BADGES[id], q, 0, fetch, true)));
-      return json({ question: q, results: Object.fromEntries(who.map((id, i) => [id, res[i]])) });
+      const trio = ["sam", "robin", "jordan"];
+      const res = await Promise.all(trio.map((id) => ask(env, fga, BADGES[id], q, 0, fetch, true)));
+      return json({ question: q, results: Object.fromEntries(trio.map((id, i) => [id, res[i]])) });
     }
     return json({ error: "not found" }, { status: 404 });
   },

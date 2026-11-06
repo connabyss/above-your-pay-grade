@@ -1,0 +1,19 @@
+# Fetches the ENCRYPTED playtest log from the live site so the maintainers can read it.
+# The log is unreadable without the private key, which is not in this repo.
+name: playtest-log
+on:
+  workflow_dispatch:
+  push:
+    branches: [playtest-pull]
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -sS --fail https://above-your-pay-grade.connharr1230.workers.dev/api/playtest-log -o log.json
+          echo "ENCRYPTED-LOG-START"
+          cat log.json
+          echo
+          echo "ENCRYPTED-LOG-END"

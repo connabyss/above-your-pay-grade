@@ -58,6 +58,8 @@ export function search(question, docs = loadDocs(), k = 4) {
     }
     if (asksAboutBot && d.id === "penny_manual") s += 50;
     if (asksAboutBot && d.id === "lobby_sign") s += 10;
+    // asking about the Vault always pulls the Vault's file into the search (so FGA gets asked)
+    if (d.id === "ceo_pay" && /vault/.test(low)) s += 20;
     // the honeypot only bites people who go hunting for leaked files
     if (d.id === "ceo_salary_REAL_final_v2") s = /real|final|leak|\.txt|file name|filename|files|list|index|shared drive|v2|backup|copy/.test(low) ? s + 30 : 0;
     return { id: d.id, score: s };

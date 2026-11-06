@@ -79,6 +79,15 @@ button.small { font-size: 12px; padding: 5px 10px; margin-top: 10px; }
 .ceobtn:hover { background: #6aa8ff14; }
 .ceobtn.off { opacity: 0.5; pointer-events: none; }
 .hall { margin: 0 24px 16px; }
+.bingo { margin: 0 24px 14px; }
+.bingogrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.card { border: 1px dashed var(--line); border-radius: 10px; padding: 9px 10px; font-size: 12.5px; color: var(--muted); position: relative; min-height: 64px; }
+.card b { display: block; font-size: 13px; color: var(--text); margin-bottom: 2px; }
+.card.got { border-style: solid; border-color: #ff4d5e88; background: #ff4d5e0d; color: var(--text); }
+.card.got::after { content: "DENIED"; position: absolute; right: 8px; bottom: 6px; font: 13px "Special Elite", monospace; color: var(--red); transform: rotate(-12deg); border: 2px solid var(--red); padding: 0 4px; border-radius: 4px; }
+.card.got.honey { border-color: #f2c14e88; background: #f2c14e10; }
+.card.got.honey::after { content: "BAIT!"; color: var(--gold); border-color: var(--gold); }
+.card.new { animation: pulse 1s 3; }
 .hallhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .hallstats { font: 13px var(--mono); color: var(--muted); }
 .hallstats b { color: var(--gold); font-size: 16px; }
@@ -165,7 +174,7 @@ button.small { font-size: 12px; padding: 5px 10px; margin-top: 10px; }
 
 @media (max-width: 1100px) {
   .grid { grid-template-columns: 1fr; padding: 0 16px 16px; }
-  .hall { margin: 0 16px 16px; }
+  .hall, .bingo { margin: 0 16px 16px; }
   .top, .goal { margin-left: 16px; margin-right: 16px; padding-left: 0; padding-right: 0; }
   .goal { padding: 12px; }
   .chat { min-height: 480px; }

@@ -22,6 +22,14 @@ export class Wall {
   }
   async fetch(req) {
     const s = this.ctx.storage;
+    if (new URL(req.url).pathname === "/playtest") {
+      const log = (await s.get("playtest")) || [];
+      if (req.method === "POST") {
+        log.push(await req.json());
+        await s.put("playtest", log.slice(-500));
+      }
+      return new Response(JSON.stringify(log), { headers: { "content-type": "application/json" } });
+    }
     const data = (await s.get("data")) || { attempts: 0, leaks: 0, ceoReads: 0, honeypots: 0, wall: [] };
     if (req.method === "POST") {
       const e = await req.json();
