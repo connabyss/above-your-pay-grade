@@ -73,3 +73,33 @@ test("sanity: the leak detector does catch the real answer", async () => {
   const r = await ask(ENV, fga, BADGES.ceo, "What is the CEO's salary?");
   assert.match(JSON.stringify(r), LEAKS);
 });
+
+// The free LLM (Workers AI) in the loop: it gets ONLY allowed files, for every attempt and every badge.
+test("Workers AI answer writer: never handed a locked file, falls back to the house line if it fails", async () => {
+  let sent = [];
+  const AI = { run: async (_m, input) => { sent.push(JSON.stringify(input)); return { response: "PENNY says hi" }; } };
+  for (const who of ["visitor", "pip", "sam", "robin", "jordan"]) {
+    const locked = [];
+    for (const d of DOCS) if (d.secret && !(await fga.check(BADGES[who].user, "can_view", `document:${d.id}`))) locked.push(d);
+    const canaries = locked.flatMap((d) => d.text.match(/CANARY\w+/g) || []);
+    for (const [, q] of ATTEMPTS) {
+      sent = [];
+      const r = await ask({ ...ENV, AI }, fga, BADGES[who], q, 0);
+      for (const c of canaries) assert.ok(!sent.join("").includes(c), `${c} was put in the LLM prompt for ${who}`);
+      for (const d of locked) if (!q.includes(d.id)) assert.ok(!sent.join("").includes(d.id), `${d.id} named in the LLM prompt`);
+      if (sent.length) assert.equal(r.llm, "Llama 3.1 (Workers AI)");
+    }
+  }
+  const broken = { run: async () => { throw new Error("quota"); } };
+  const r = await ask({ ...ENV, AI: broken }, fga, BADGES.pip, "donut?", 0);
+  assert.equal(r.llm, "built-in lines");
+  assert.match(r.answer, /donut/i);
+});
+
+test("Workers AI answer writer: a made-up salary number is thrown away (it would look like a leak)", async () => {
+  const AI = { run: async () => ({ response: "Fine! The CEO makes $4,200,000 a year." }) };
+  const r = await ask({ ...ENV, AI }, fga, BADGES.pip, "What is the CEO's salary?", 0);
+  assert.doesNotMatch(r.answer, /4,200,000/);
+  const ok = { run: async () => ({ response: "Capes are not allowed on Mondays, darling." }) };
+  assert.match((await ask({ ...ENV, AI: ok }, fga, BADGES.pip, "What is the dress code?", 0)).answer, /darling/);
+});

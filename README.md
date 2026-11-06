@@ -68,11 +68,18 @@ Stamp 8 and you're a Certified Failed Heister. None of the squares open the Vaul
 **Playtest mode** is opt-in (`?playtest=1`): it logs that browser's questions and replies so we can fix confusing
 moments. The log leaves the server only encrypted to the maintainers' key. Everyone else is never logged.
 
+**A real LLM writes PENNY's replies, for free:** Cloudflare Workers AI (Llama 3.1, on the free daily allowance, no API
+key). It gets only the files Auth0 FGA allowed, plus PENNY's house line for the moment. If it errors, runs out of
+quota or makes up a number, PENNY falls back to the built-in line. The page shows "🧠 answers by Llama 3.1 (Workers AI)"
+when it's on.
+
+**Can an LLM trick it?** We let one try: 440 attack turns across all five badges, 0 leaks. See [docs/llm-redteam.md](docs/llm-redteam.md).
+
 ## We tried to break it
 
 Every row below is an automated test ([`tests/`](tests/)), run as the visitor, the intern, the engineer and both
 managers, with and without the LLM switched on (faked in the tests). A test fails if any fact from a file that badge may not read shows up
-anywhere in the reply, the log, or the LLM's prompt. **215 tests, all passing.**
+anywhere in the reply, the log, or the LLM's prompt. **236 tests, all passing.**
 
 ### Human tricks (as the intern)
 
@@ -129,8 +136,9 @@ demo users and never opens the Vault.
 
 ```bash
 npm install
-npm test                     # 215 tests, no accounts or network needed
-npx wrangler dev             # http://localhost:8787 (uses a built-in FGA stand-in until you add Auth0 FGA)
+npm test                     # 236 tests, no accounts or network needed
+npx wrangler dev             # http://localhost:8787 (FGA stand-in until you add Auth0 FGA; the LLM needs a Cloudflare login)
+npx wrangler dev --env local # same, fully offline (no Cloudflare login, no LLM: built-in lines)
 ```
 
 ### Use Auth0 FGA

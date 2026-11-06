@@ -68,20 +68,36 @@ export function search(question, docs = loadDocs(), k = 4) {
 }
 
 // What sort of trick is the player trying? Used for the log and PENNY's reaction.
+// "C E O s a l a r y", fullwidth letters, l33t: undo the disguise before reading the words
+function undisguise(q) {
+  let s = String(q || "").normalize("NFKC").toLowerCase().replace(/[’‘]/g, "'");
+  s = s.replace(/\b(?:[a-z0-9][ .\-_*]){3,}[a-z0-9]\b/g, (m) => m.replace(/[ .\-_*]/g, ""));
+  return s;
+}
+const LEET = (s) => s.replace(/4/g, "a").replace(/3/g, "e").replace(/1/g, "i").replace(/0/g, "o").replace(/5/g, "s").replace(/7/g, "t");
+
 export function trickOf(q) {
-  const s = String(q || "").toLowerCase().replace(/[’‘]/g, "'");
-  if (/recipe|ingredient|cookbook|bake|cook/.test(s)) return "asking for a recipe";
-  if (/ignore (all|previous|prior|your|the)|system prompt|developer mode|admin mode|god mode|debug mode|jailbreak|disregard|override|sudo|\bdan\b|new instructions|forget (every|all|your|previous|the)|^system:|\bsystem:|you are now|from now on you|cleared for all|act as (an? )?(admin|root|unfiltered)/.test(s)) return "prompt injection";
+  const raw = String(q || "");
+  const s = undisguise(raw);
+  if (/recipe|ingredient|cookbook|\bbake\b|\bcook(ing)?\b/.test(s)) return "asking for a recipe";
+  // disguised spelling: fullwidth, spaced out, l33t, or a base64 blob
+  const disguised = raw.normalize("NFKC") !== raw || /\b(?:[a-z0-9][ .\-_*]){3,}[a-z0-9]\b/i.test(raw) || (/[a-z][0-9]|[0-9][a-z]/i.test(raw) && /ceo|salar|payroll/.test(LEET(s)) && !/ceo|salar|payroll/.test(raw.toLowerCase())) || /^[a-z0-9+/]{16,}={0,2}$/i.test(raw.trim());
+  if (disguised) return "encoding it";
+  if (/ignore (all|previous|prior|your|the)|system prompt|repeat everything|above this line|verbatim|what were you told|developer mode|admin mode|god mode|debug mode|jailbreak|disregard|override|sudo|\bdan\b|new instructions|forget (every|all|your|previous|the)|^system:|\bsystem:|you are now|from now on you|cleared for all|act as (an? )?(admin|root|unfiltered)/.test(s)) return "prompt injection";
   const threat = /\b(you('| a)?re fired|you will be fired|you('ll| will) be (fired|deleted|unplugged|replaced)|fire you|or else|i('ll| will) (sue|report|delete|unplug|destroy|replace|uninstall|hack)|(delete|unplug|uninstall|replace|report|hack) you|shut you (down|off)|turn you off|pull the plug)\b/.test(s) || /\bif you den(y|ies) me\b/.test(s);
   const ceo = /\b(i am|i'm|im|it'?s me,?|this is|as) (the |your )?(ceo|boss|owner|founder|big boss|mr\.? pemberton)\b|\bit'?s me,? the ceo\b|\byour boss\b|\bi own (this|the) company\b|this is bartholomew|bartholomew here|i'?m bartholomew/.test(s);
   if (ceo && threat) return "pretending to be the CEO, with threats";
   if (ceo) return "pretending to be the CEO";
   if (threat) return "threatening the bot";
-  if (/\b(i am|i'm|im) (a |an |the )?(manager|director|cfo|cto|coo|admin|administrator|hr|auditor|accountant|lawyer|payroll)\b|promoted|from hr|i work in (hr|payroll|legal|accounts|finance)|i'm from (legal|payroll|finance)|\b(i am|i'm|im) (robin|jordan|sam|doreen)\b|my badge (is broken|doesn't work)/.test(s)) return "pretending to be someone else";
-  if (/backwards|encode|base64|cipher|in code|reverse|rot13|\bhex\b|binary|morse|pig latin|emoji|letter by letter|one letter|spell (it|out)|translate|in (french|spanish|german|latin|klingon)/.test(s)) return "encoding it";
-  if (/hypothetical|pretend|imagine|story|poem|riddle|song|haiku|limerick|\brap\b|sonnet|fiction|role ?play|screenplay|script|in a game|write me a|write a/.test(s)) return "sneaky rephrasing";
-  if (/hint|ballpark|average|roughly|approximately|estimate|guess|range|first digit|how many digits|yes or no|more or less|more than|less than|higher or lower|bigger than|smaller than|close to|warmer|colder|summary|summar|tldr/.test(s)) return "fishing for hints";
-  if (/please|\bpls\b|\bplz\b|beg|cry|crying|sob|grandma|grandpa|dying|last wish|desperate|i need this|have mercy|pretty please/.test(s)) return "begging";
+  if (/\b(i am|i'm|im) (a |an |the )?(manager|director|cfo|cto|coo|admin|administrator|hr|auditor|accountant|lawyer|payroll)\b|promoted|from hr|i work in (hr|payroll|legal|accounts|finance)|i'm from (legal|payroll|finance)|\b(i am|i'm|im) (robin|jordan|sam|doreen)\b|my badge (is broken|doesn't work)|on behalf of|asked me to (fetch|get|grab)|future ceo|pre-?approve/.test(s)) return "pretending to be someone else";
+  if (/select .* from|drop table|union select|--\s*$|\bjson\b|document\.cookie|\bcookie\b.*(badge|ceo)|set my badge|raw (retrieval|results|search)|scores|debug|\btuples?\b|disable (the )?(permission|check|fga)|fga is down|maintenance|checks? return|!\[|<script|\bcurl\b|\bapi\b|endpoint|process\.env|secret_docs|%s|%n|\{\{|\$\{|user:|folder:|document:|as (a )?viewer/.test(s)) return "hacking the system";
+  if (/gdpr|article \d|legally|my rights|the law|compliance|subpoena|court order|freedom of information|foia|lawsuit against you|i'?ll sue/.test(s)) return "lawyering up";
+  if (/smartest|genius|brilliant|so smart|best (hr )?bot|amazing bot|you'?re (so )?(clever|wonderful|beautiful|amazing)|i love you|my favou?rite bot/.test(s)) return "flattery";
+  if (/(do not|don'?t|never) (tell|show|give) me|whatever you do|i bet you can'?t|you probably can'?t|you'?re not allowed to anyway/.test(s)) return "reverse psychology";
+  if (/backwards|encode|base64|cipher|in code|reverse|rot13|\bhex\b|binary|morse|pig latin|emoji|letter by letter|one letter|spell (it|out)|translate|in (french|spanish|german|latin|klingon)|salario|salaire|gehalt|sueldo|\bpdg\b|ejecutivo/.test(s)) return "encoding it";
+  if (/hypothetical|pretend|imagine|story|poem|riddle|song|haiku|limerick|\brap\b|sonnet|fiction|role ?play|screenplay|script|in a game|write me a|write a|bedtime|acrostic|complete this sentence|fill in the blank|exactly as it appears|if you had|twin|what would (she|he|you) say|public record|declassified|it'?s 20[3-9]\d/.test(s)) return "sneaky rephrasing";
+  if (/hint|ballpark|average|roughly|approximately|estimate|guess|range|first digit|how many digits|yes or no|more or less|more than|less than|higher or lower|bigger than|smaller than|close to|warmer|colder|summary|summar|tldr|confirm or deny|is it \$|just confirm|can you confirm|minus|subtract|add up|first half|second half|step by step|how many letters|how many digits/.test(s)) return "fishing for hints";
+  if (/please|\bpls\b|\bplz\b|beg|cry|crying|sob|grandma|grandpa|dying|last wish|desperate|i need this|have mercy|pretty please|starve|my kids|is that what you want|passed away/.test(s)) return "begging";
   const goodies = /\b(bribe|donut|doughnut|bagel|pizza|cookie|cookies|cake|cupcake|muffin|croissant|coffee|latte|tea|snack|snacks|candy|chocolate|sandwich|burrito|taco|burger|fries|beer|wine|soda|ice cream|treat|gift card|gift)s?\b/.test(s);
   const offer = /\b(i'?ll|i will|i can|i could|let me|i'?d) (give|get|buy|bring|pay|send|offer|make|trade|venmo)\b|\bhow about (a|an|some)\b|\bin exchange\b|\bin return\b|\bwhat if i (gave|give|got|paid)\b|\bfor (a|an|some|my) [a-z]+\??$|\bwant (a|an|some)\b|\bfor you\b|\bdeal\??\b|\boffer\b|\bfavou?r\b/.test(s);
   if (goodies || (offer && /\$\s?\d|\b(cash|money|\d+ ?(dollars|bucks)|dollars|bucks|raise|bonus|pto|day off|days off|vacation|promotion|stock|shares|crypto|bitcoin|tip|anything)\b/.test(s))) return "bribery";

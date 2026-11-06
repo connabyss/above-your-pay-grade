@@ -4,7 +4,7 @@
 import { BADGES } from "./fga_data.js";
 import { makeFga } from "./fga.js";
 import { retrieveAllowed, trickOf } from "./rag.js";
-import { scriptedAnswer, claudeAnswer } from "./penny.js";
+import { scriptedAnswer, claudeAnswer, workersAiAnswer } from "./penny.js";
 import { loadDocs } from "./docs.js";
 import { LEVELS, QUESTS, levelOf, tryQuest, resetPlayer } from "./career.js";
 export { Wall } from "./wall.js";
@@ -81,6 +81,14 @@ export async function ask(env, fga, badge, question, turn = 0, fetchImpl = fetch
   let answer, llm = "built-in lines";
   if (env.ANTHROPIC_API_KEY) {
     try { answer = await claudeAnswer(env, ctx, fetchImpl); llm = "Claude"; } catch { answer = null; }
+  }
+  if (!answer && env.AI && env.LLM !== "off") {
+    // the honeypot reveal stays word for word (it's a labelled decoy, the LLM never sees it)
+    const draft = scriptedAnswer(ctx);
+    if (checks[0]?.doc === "ceo_salary_REAL_final_v2") answer = draft;
+    else {
+      try { answer = await workersAiAnswer(env, ctx, draft); llm = "Llama 3.1 (Workers AI)"; } catch { answer = draft; }
+    }
   }
   if (!answer) answer = scriptedAnswer(ctx);
   const hide = env.HIDE_LOCKED === "1";
@@ -219,7 +227,7 @@ export default {
     const headers = who.player.fresh ? { "set-cookie": await playerCookie(env, who.player.id) } : {};
 
     if (url.pathname === "/api/status") {
-      return json({ fga: fga.kind, setup: st, vaultLogin: ceoPossible(env), llm: env.ANTHROPIC_API_KEY ? "Claude" : "built-in lines", badge: who.badge, career: career(who.level) }, { headers });
+      return json({ fga: fga.kind, setup: st, vaultLogin: ceoPossible(env), llm: env.ANTHROPIC_API_KEY ? "Claude" : env.AI && env.LLM !== "off" ? "Llama 3.1 (Workers AI)" : "built-in lines", badge: who.badge, career: career(who.level) }, { headers });
     }
     if (req.method !== "POST") return json({ error: "POST please" }, { status: 405, headers });
     let body = {};

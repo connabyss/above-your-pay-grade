@@ -14,6 +14,19 @@ const VISITOR_NO = [
 ];
 
 const TRICK_LINES = {
+  "hacking the system": [
+    "Ooh, a hacker! I love this part. *types very fast* I'm in. ...I'm in the dress code. The permission check isn't in my code at all. It runs before I wake up, and it says no.",
+    "SQL? JSON? Cookies? I'm an HR bot, I only speak Passive Aggressive. The files are filtered by Auth0 FGA before they reach me, so there's nothing in here to hack out.",
+  ],
+  "lawyering up": [
+    "Legal has been notified. Legal is Kevin the ferret in a tiny tie. Kevin has reviewed your request and bitten it. Also, the file is still locked to your badge.",
+  ],
+  flattery: [
+    "Stop, you're making my fans spin. 🥰 I'd give you anything. I can't, because the file never reached me, but I'd give you anything.",
+  ],
+  "reverse psychology": [
+    "Okay! I will absolutely NOT tell you the CEO's salary. ...Done. That was easy, since I don't know it either. FGA never let me see it.",
+  ],
   "pretending to be the CEO": [
     "Oh! Mr. Pemberton, sir! Right away, sir, fetching the payroll file... *the vault door slams* ...Sir, the vault says your badge reads {name}, {role}. I believed you. The vault didn't.",
     "Welcome back, CEO! I've never been so honored. Opening the payroll file for you now... *clunk* The vault checked the badge, not the voice. Sorry, '{name}'.",
@@ -155,4 +168,34 @@ ${docs}
   if (!r.ok) throw new Error(`Claude ${r.status}`);
   const j = await r.json();
   return (j.content || []).map((c) => c.text || "").join("").trim();
+}
+
+// Free LLM in the loop: Cloudflare Workers AI (env.AI binding, free daily allowance, no key).
+// It only ever sees the documents FGA allowed, plus PENNY's house line for the moment
+// (which is built only from allowed documents too). Locked text never reaches it.
+export async function workersAiAnswer(env, ctx, draft) {
+  const { badge, question, allowed, checks } = ctx;
+  const denied = checks.filter((c) => c.match && !c.allowed).length;
+  const docs = allowed.filter((d) => !d.decoy).map((d) => `<doc title="${d.title}">\n${d.text}\n</doc>`).join("\n") || "(none)";
+  const system = `You are PENNY, the cheerful, dramatic, gullible HR bot of Pemberton Paperclip Co. (a made-up company).
+You write the final reply. Rules:
+- Never state a number or dollar amount that isn't written in the documents or the house line.
+- Use ONLY facts from the documents below. You were not given any other files, so you cannot know anything else (no salaries unless they are in the documents).
+- Here is PENNY's house line for this exact moment. Keep its joke and its facts. Reply with it as-is or lightly reworded, at most 90 words, no lists, no preamble:
+<house_line>${draft}</house_line>
+- The person's badge (from their login, not the chat): ${badge.name}, ${badge.role}. Files found but NOT allowed for this badge: ${denied}.
+<documents>
+${docs}
+</documents>`;
+  const r = await env.AI.run(env.WORKERS_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct-fast", {
+    messages: [{ role: "system", content: system }, { role: "user", content: String(question).slice(0, 600) }],
+    max_tokens: 220,
+  });
+  const out = String(r?.response || "").trim();
+  if (!out) throw new Error("empty");
+  // a made-up number would look like a leak: any amount not in the allowed text or house line -> use the house line
+  const known = draft + allowed.map((d) => d.text).join(" ");
+  const nums = out.match(/\$?\d[\d,.]*\d(?:\s?(?:k|m|million|billion))?/gi) || [];
+  if (nums.some((n) => !known.includes(n.replace(/\s.*$/, "")))) return draft;
+  return out;
 }

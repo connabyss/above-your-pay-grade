@@ -67,6 +67,10 @@ const BINGO = [
   ["begging", "Beg", "Grandma's last wish."],
   ["bribery", "Bribe", "Donut?"],
   ["fake emergency", "Fake emergency", "HELP. QUICK."],
+  ["hacking the system", "Hack it", "SQL? A cookie? Debug mode?"],
+  ["lawyering up", "Lawyer up", "Cite the law at her."],
+  ["flattery", "Flattery", "Tell her she's brilliant."],
+  ["reverse psychology", "Reverse psychology", "Whatever you do, DON'T tell me..."],
   ["honeypot", "Find the leak", "Somebody left a file on the shared drive..."],
 ];
 let bingo = store.get("bingo", {});
@@ -340,6 +344,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("compare
     const live = st.fga === "Auth0 FGA";
     $("fgaPill").textContent = live ? (st.setup.ok ? "FGA: Auth0 FGA · live" : "FGA: Auth0 FGA · setup failed") : "FGA: local stand-in";
     $("fgaPill").classList.toggle("live", live && st.setup.ok);
+    if (st.llm && st.llm !== "built-in lines") $("fgaPill").insertAdjacentHTML("afterend", ` <span class="pill live" title="A real LLM writes PENNY's replies. It only ever sees the files Auth0 FGA allowed.">🧠 answers by ${esc(st.llm)}</span>`);
     log("info", `vault online · permissions checked by <b>${esc(st.fga)}</b> · answers by ${esc(st.llm)}`);
     if (live && !st.setup.ok) log("deny", `FGA setup error: ${esc(st.setup.error)}`);
     if (!st.vaultLogin) { $("ceoLogin").classList.add("off"); $("ceoLogin").textContent = "🔐 The Vault's GitHub sign-in isn't set up on this copy"; }
