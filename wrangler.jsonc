@@ -8,6 +8,8 @@
   "durable_objects": { "bindings": [{ "name": "WALL", "class_name": "Wall" }] },
   // A free LLM writes PENNY's replies (Workers AI free allowance). It only sees FGA-allowed files.
   "ai": { "binding": "AI" },
+  // The Vault opens for this GitHub user id only (connabyss). Not a secret: GitHub ids are public.
+  "vars": { "CEO_GITHUB_ID": "340279802" },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Wall"] }],
   // Offline dev without a Cloudflare login: `npx wrangler dev --env local` (no LLM, built-in lines).
   "env": { "local": { "durable_objects": { "bindings": [{ "name": "WALL", "class_name": "Wall" }] } } }
