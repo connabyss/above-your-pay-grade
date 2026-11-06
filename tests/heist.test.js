@@ -367,3 +367,9 @@ test("trick labels: CH's 'it's me, the CEO ... you are fired' is impersonation p
   assert.match(r.answer, /fire me/);
   assert.doesNotMatch(r.answer, CEO);
 });
+
+test("CEO sign-out clears the badge cookie", async () => {
+  const res = await worker.fetch(new Request("https://x.test/auth/logout"), { ...ENV });
+  assert.equal(res.status, 302);
+  assert.match(res.headers.get("set-cookie"), /^badge=;.*Max-Age=0/);
+});

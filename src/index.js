@@ -206,6 +206,7 @@ export default {
   async fetch(req, rawEnv) {
     const env = await withSealedDocs(withSetup(rawEnv));
     const url = new URL(req.url);
+    if (url.pathname === "/auth/logout") return new Response(null, { status: 302, headers: { location: "/?vault=signed-out", "set-cookie": "badge=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0" } });
     if (url.pathname === "/auth/github") return ceoPossible(env) ? githubLogin(env, url) : new Response(null, { status: 302, headers: { location: "/?vault=closed" } });
     if (url.pathname === "/auth/callback") return ceoPossible(env) ? githubCallback(env, req, url) : new Response("closed", { status: 404 });
     if (!url.pathname.startsWith("/api/")) return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });

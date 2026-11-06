@@ -49,7 +49,7 @@ to read. Each promotion **writes a real tuple to Auth0 FGA**, and your level is 
 | 🗄️ Office | `group:staff#member` | the Lost & Found code word (it's on the lobby sign) |
 | 📈 Manager Floor | `department:engineering#manager`, `department:hr#manager` | name the suspect in the Stapler Incident |
 | 🗂️ HR Wing | `department:hr#member` / `#manager` | the door code on a sticky note in the Engineering pay file |
-| 🔐 The Vault | `user:ceo` **only** | nothing in the game. One GitHub account, checked by numeric id |
+| 🔐 The Vault | `user:ceo` **only** | nothing in the game. One GitHub account (the creator's), checked by numeric id. **Live:** the creator signed in and it opened; any other account is refused |
 
 Documents inherit their floor's viewers (`define viewer: [...] or viewer from parent`), so access is modelled
 once, per floor, not per file.

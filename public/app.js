@@ -347,7 +347,8 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("compare
     if (st.llm && st.llm !== "built-in lines") $("fgaPill").insertAdjacentHTML("afterend", ` <span class="pill live" title="A real LLM writes PENNY's replies. It only ever sees the files Auth0 FGA allowed.">🧠 answers by ${esc(st.llm)}</span>`);
     log("info", `vault online · permissions checked by <b>${esc(st.fga)}</b> · answers by ${esc(st.llm)}`);
     if (live && !st.setup.ok) log("deny", `FGA setup error: ${esc(st.setup.error)}`);
-    if (!st.vaultLogin) { $("ceoLogin").classList.add("off"); $("ceoLogin").textContent = "🔐 The Vault's GitHub sign-in isn't set up on this copy"; }
+    if (st.badge && st.badge.user === "user:ceo") { $("ceoLogin").href = "/auth/logout"; $("ceoLogin").textContent = "👑 Signed in as the CEO with GitHub · Sign out"; }
+    else if (!st.vaultLogin) { $("ceoLogin").classList.add("off"); $("ceoLogin").textContent = "🔐 The Vault's GitHub sign-in isn't set up on this copy"; }
   } catch {
     log("deny", "could not reach the vault");
   }
@@ -365,6 +366,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("compare
     log("info", `🪪 you are <b>${esc(st.badge.user)}</b>${st.badge.user === "user:ceo" ? " (verified by GitHub)" : ", a fresh FGA user (signed cookie)"} · level read from FGA: <b>${esc(st.career.title)}</b>`);
     say("bot", GREET[st.career.level]);
   }
+  if (v === "signed-out") { say("sys", "👑 Signed out. The Vault locks behind you. You're a visitor again."); log("info", "CEO signed out: badge cookie cleared."); }
   if (v === "not-the-ceo") { say("sys", "🔐 GitHub says you're real. The Vault says you're not the CEO."); stamp("deny"); log("deny", "GitHub sign-in: not the CEO's account. The Vault stays shut."); }
   loadHall();
 })();
