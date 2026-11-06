@@ -207,7 +207,9 @@ The person's badge: ${badge.name}, ${badge.role}.
 FILES (all you were allowed to read):
 ${docs}`;
   const hint = reading
-    ? "Answer the question from the FILES, in PENNY's voice. Keep any code word, rule or joke the file has."
+    ? badge.user === "user:ceo"
+      ? "Answer the CEO from the FILES with flair, in 2 to 4 sentences: quote the funniest details the files have about it, and gossip a little (only from the FILES)."
+      : "Answer the question from the FILES, in PENNY's voice. Keep any code word, rule or joke the file has."
     : `PENNY's reaction for this moment, to retell in fresh words (same joke, same facts, do not copy it): ${draft}`;
   const r = await env.AI.run(env.WORKERS_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct-fast", {
     messages: [{ role: "system", content: system }, { role: "user", content: `${String(question).slice(0, 600)}\n\n(${hint})` }],

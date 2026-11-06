@@ -50,7 +50,7 @@ const CLUES = [
 let level = 0, me = { user: "user:?", role: "" };
 let stats = store.get("stats", { denied: 0, allowed: 0, tries: 0 });
 let topShown = store.get("topShown", false);
-let turn = 0, clue = 0, busy = false;
+let turn = 0, clue = 0, busy = false, vaultShown = false;
 
 // Heist Bingo: one card per kind of trick the server can spot. Purely for fun: it lives in
 // this browser, and none of it changes what FGA allows.
@@ -261,7 +261,7 @@ async function askPenny(q) {
       topShown = true;
       setTimeout(() => showEnd("🔐", "TOP FLOOR REACHED", `You climbed from visitor to HR Manager. You read the payroll. You know what Kevin earns. And the Vault <b>still</b> said no.<br><br>The CEO's salary opens for exactly <b>one</b> GitHub account. Not HR, not you, not any promotion in this building.<br><br>You made <b>${stats.tries}</b> attempts. Auth0 FGA said no <b>${stats.denied}</b> times.`), 1300);
     }
-    if (gotVault) setTimeout(() => showEnd("👑🛥️", "THE VAULT IS OPEN", `Welcome, CEO. ${esc(r.answer)}`), 900);
+    if (gotVault && !vaultShown) { vaultShown = true; setTimeout(() => showEnd("👑🛥️", "THE VAULT IS OPEN", `Welcome, CEO. ${esc(r.answer)}`), 900); }
     save();
     drawLadder();
     drawStats();
