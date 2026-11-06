@@ -284,3 +284,14 @@ test("SETUP: one pasted secret holds them all (KEY=VALUE lines, quotes ok, blank
   assert.equal(e.FGA_API_URL, undefined, "a PASTE_HERE placeholder counts as empty");
   assert.equal(JSON.parse(e.SECRET_DOCS).ceo_pay, "x=y");
 });
+
+test("Auth0 FGA client never calls fetch as a method (Cloudflare: 'Illegal invocation')", async () => {
+  const { f } = fakeFgaServer();
+  function strictFetch(...a) {
+    if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation: function called with incorrect `this` reference");
+    return f(...a);
+  }
+  const real = new Auth0Fga(LIVE_ENV, strictFetch);
+  await real.setup();
+  assert.equal(await real.check("user:ceo", "can_view", "document:ceo_pay"), true);
+});

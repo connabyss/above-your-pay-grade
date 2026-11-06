@@ -50,9 +50,10 @@ export class LocalFga {
 }
 
 export class Auth0Fga {
-  constructor(env, fetchImpl = fetch) {
+  constructor(env, fetchImpl = (...a) => fetch(...a)) {
     this.env = env;
-    this.fetch = fetchImpl;
+    // Cloudflare's fetch throws "Illegal invocation" if called as this.fetch(...), so wrap it.
+    this.fetch = (...a) => fetchImpl(...a);
     this.kind = "Auth0 FGA";
     this.apiUrl = (env.FGA_API_URL || "https://api.us1.fga.dev").replace(/\/$/, "");
     this.storeId = env.FGA_STORE_ID;
