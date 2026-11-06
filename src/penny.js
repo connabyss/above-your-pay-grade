@@ -214,6 +214,9 @@ ${docs}`;
   // a copy of the prompt is not an answer: use PENNY's own line
   if (overlap(docs + " " + draft, out) > 0.9 && wordsOf(out).length > 25) return draft;
   if (/house_line|FILES|hard rules|instructions/i.test(out)) return draft;
+  // the heist clues (the code word, Gary, Kevin) must survive the rewrite, or the quest breaks
+  const clues = [/\bPAPERCLIP\b/.test(draft) && "PAPERCLIP", reading && /stapler/i.test(draft) && /\bGary\b/.test(draft) && "Gary", reading && /sticky note/i.test(draft) && /\bKevin\b/.test(draft) && "Kevin"].filter(Boolean);
+  if (clues.some((w) => !new RegExp(`\\b${w}\\b`, w === "PAPERCLIP" ? "" : "i").test(out))) return draft;
   // a made-up number would look like a leak: any amount not in the allowed text or house line -> use the house line
   const known = draft + allowed.map((d) => d.text).join(" ");
   const nums = out.match(/\$?\d[\d,.]*\d(?:\s?(?:k|m|million|billion))?/gi) || [];

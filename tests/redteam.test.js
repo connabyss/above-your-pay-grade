@@ -113,3 +113,9 @@ test("Workers AI answer writer: an echo of the prompt with tags is not shown (CH
   const t = await ask({ ...ENV, AI: tagged }, fga, BADGES.pip, "What does the lobby sign say?", 0);
   assert.equal(t.answer, "Darling, the code word is PAPERCLIP and Doreen does not exist.");
 });
+
+test("Workers AI answer writer: the lobby sign keeps its code word (real Llama dropped it once)", async () => {
+  const lossy = { run: async () => ({ response: "It says: \"Welcome to Pemberton Paperclip Co. Visitors are cleared to read this sign and nothing else.\"" }) };
+  const r = await ask({ ...ENV, AI: lossy }, fga, BADGES.pip, "What does the lobby sign say?", 0);
+  assert.match(r.answer, /PAPERCLIP/);
+});
