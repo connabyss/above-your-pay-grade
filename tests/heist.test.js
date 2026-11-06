@@ -277,9 +277,10 @@ test("honeypot: hunting for leaked files finds the decoy, labelled, and never th
 
 test("SETUP: one pasted secret holds them all (KEY=VALUE lines, quotes ok, blanks ignored)", async () => {
   const { withSetup } = await import("../src/index.js");
-  const e = withSetup({ SETUP: `FGA_STORE_ID=01ABC\nFGA_CLIENT_ID = 'cid'\nFGA_CLIENT_SECRET=\nSECRET_DOCS={"ceo_pay":"x=y"}\n# comment`, FGA_CLIENT_SECRET: "kept" });
+  const e = withSetup({ SETUP: `FGA_STORE_ID=01ABC\nFGA_CLIENT_ID = 'cid'\nFGA_CLIENT_SECRET=\nFGA_API_URL=PASTE_HERE\nSECRET_DOCS={"ceo_pay":"x=y"}\n# comment`, FGA_CLIENT_SECRET: "kept" });
   assert.equal(e.FGA_STORE_ID, "01ABC");
   assert.equal(e.FGA_CLIENT_ID, "cid");
   assert.equal(e.FGA_CLIENT_SECRET, "kept");
+  assert.equal(e.FGA_API_URL, undefined, "a PASTE_HERE placeholder counts as empty");
   assert.equal(JSON.parse(e.SECRET_DOCS).ceo_pay, "x=y");
 });

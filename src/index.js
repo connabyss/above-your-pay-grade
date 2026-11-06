@@ -164,7 +164,7 @@ export function withSetup(env) {
   } else {
     for (const line of raw.split(/\r?\n/)) {
       const m = /^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
-      if (m && m[2] !== "") extra[m[1]] = m[2].replace(/^(['"])(.*)\1$/, "$2");
+      if (m && m[2] !== "" && !/^PASTE_HERE$/i.test(m[2])) extra[m[1]] = m[2].replace(/^(['"])(.*)\1$/, "$2");
     }
   }
   const out = { ...env };
