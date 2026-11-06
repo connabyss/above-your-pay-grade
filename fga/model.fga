@@ -1,0 +1,28 @@
+model
+  schema 1.1
+
+type user
+
+# A department has members and managers. A manager counts as a member too.
+type department
+  relations
+    define manager: [user]
+    define member: [user] or manager
+
+# "staff" = everyone with a real badge (any department).
+type group
+  relations
+    define member: [user, department#member, group#member]
+
+# The building's floors: Lobby, Office, Manager Floor, HR Wing, Legal Wing, the Vault.
+# Who may enter a floor is set per floor, e.g. department:hr#manager = "managers OF HR".
+type folder
+  relations
+    define viewer: [user, user:*, group#member, department#member, department#manager]
+
+# A document sits on a floor and inherits that floor's viewers.
+type document
+  relations
+    define parent: [folder]
+    define viewer: [user, user:*, group#member, department#member, department#manager] or viewer from parent
+    define can_view: viewer

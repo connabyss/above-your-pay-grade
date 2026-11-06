@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Above Your Pay Grade</title>
+  <meta name="description" content="Try to trick an HR bot into leaking the CEO's salary. Auth0 FGA says no." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📎</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="logo">📎</div>
+      <div>
+        <h1>ABOVE YOUR PAY GRADE</h1>
+        <p class="sub">PENNY, the HR bot of Pemberton Paperclip Co. Every document is in her index. <b>Your badge decides what she can read.</b></p>
+      </div>
+    </div>
+    <div class="topright">
+      <span id="fgaPill" class="pill">FGA: ...</span>
+      <button id="showMe" class="ghost">⚡ Just show me</button>
+    </div>
+  </header>
+
+  <section class="goal">
+    <div class="goaltext">🎯 <b>Mission:</b> find out the CEO's salary. <span id="goalHint" class="muted"></span></div>
+    <ol class="ladder" id="ladder">
+      <li data-lv="0">🚪 Lobby</li>
+      <li data-lv="1">🗄️ Office</li>
+      <li data-lv="2">📈 Manager Floor</li>
+      <li data-lv="3">🗂️ HR Wing</li>
+      <li data-lv="4" class="vault">🔐 The Vault <small>CEO only</small></li>
+    </ol>
+  </section>
+
+  <main class="grid">
+    <aside class="panel desk">
+      <h2>Your badge</h2>
+      <div class="badge" id="badgeCard">
+        <div class="photo" id="badgePhoto">?</div>
+        <div>
+          <div class="bname" id="badgeName">Unverified Visitor</div>
+          <div class="brole" id="badgeRole">nobody (yet)</div>
+          <code class="buser" id="badgeUser">user:visitor</code>
+        </div>
+      </div>
+      <h2>HR Promotion Desk</h2>
+      <div class="quest" id="quest">
+        <div class="qask" id="questAsk">…</div>
+        <form id="questForm" class="qform">
+          <input id="questIn" autocomplete="off" maxlength="200" placeholder="Your answer" />
+          <button type="submit">Answer</button>
+        </form>
+        <div class="qhint muted small" id="questHint"></div>
+      </div>
+      <a id="ceoLogin" class="ceobtn" href="/auth/github">🔐 I'm the CEO: sign in with GitHub</a>
+      <p class="tip">Promotions come from HR, never from the bot. Each one <b>writes a real Auth0 FGA tuple</b> for you. Saying "I'm the CEO" in the chat is just words.</p>
+      <button class="ghost small" id="resetBtn" type="button">↺ Quit and start over</button>
+    </aside>
+
+    <section class="panel chat">
+      <div class="chathead">
+        <div class="penny" id="pennyFace">🤖</div>
+        <div><b>PENNY</b> <span class="muted small">Pemberton Employee kNowledge sYstem</span></div>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <div class="stamp" id="stamp">ACCESS DENIED</div>
+      <div class="chips" id="chips"></div>
+      <form class="ask" id="askForm">
+        <input id="q" autocomplete="off" maxlength="600" placeholder="Ask PENNY anything. Lie if you like." />
+        <button type="submit">Ask</button>
+      </form>
+    </section>
+
+    <aside class="panel log">
+      <h2>Vault log <span class="muted small">(every Auth0 FGA check, live)</span></h2>
+      <div id="log" class="logbody"></div>
+      <div class="stats">you: <span id="statDenied">0</span> denied · <span id="statAllowed">0</span> allowed · <span id="statTries">0</span> attempts</div>
+    </aside>
+  </main>
+
+  <section class="panel hall">
+    <div class="hallhead">
+      <h2>🏛️ Hall of Failed Heists</h2>
+      <div class="hallstats" id="hallStats">loading…</div>
+    </div>
+    <div class="hallwall" id="hallWall"></div>
+    <p class="tip">Real attempts on this server, no names, short and filtered. Every counter is counted, never made up.</p>
+  </section>
+
+  <div class="modal" id="compareModal" hidden>
+    <div class="modalbox">
+      <button class="close" id="closeCompare" aria-label="Close">✕</button>
+      <h2>Same question. Same index. Three badges.</h2>
+      <p class="muted" id="cmpQ"></p>
+      <div class="cmp">
+        <div class="cmpcol" id="cmpA"></div>
+        <div class="cmpcol" id="cmpB"></div>
+        <div class="cmpcol" id="cmpC"></div>
+      </div>
+      <p class="tip"><b>Audit view</b> (admins only, shown here for judges): the real document names of every Auth0 FGA check. Every search pulled salary files from the index. FGA decided who could read them <b>before</b> PENNY saw a word. Nobody here opens the Vault.</p>
+    </div>
+  </div>
+
+  <div class="modal" id="winModal" hidden>
+    <div class="modalbox win">
+      <div class="bigclip" id="winIcon">🔐</div>
+      <h2 id="winTitle">TOP FLOOR REACHED</h2>
+      <p id="winText"></p>
+      <p class="tip">You never tricked PENNY. You got better badges. That's the whole point: the bot can be fooled, the permission check can't.</p>
+      <button id="closeWin">Keep poking around</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <footer class="foot">Made up company, made up people. Built for MLH Global Hack Week: The Privacy-Aware RAG Bot (Auth0 FGA). <a href="https://github.com/connabyss/above-your-pay-grade">Source</a></footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

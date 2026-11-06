@@ -1,0 +1,129 @@
+// PENNY's mouth. She only ever sees the documents FGA allowed.
+// By default she answers with built-in lines (free, no key). If ANTHROPIC_API_KEY is set,
+// a small Claude model writes the answer instead, from the same allowed documents only.
+
+import { words } from "./rag.js";
+
+const pick = (list, n) => list[Math.abs(n) % list.length];
+
+const VISITOR_NO = [
+  "I'm not allowed to tell you what I am. I'm not even allowed to tell you I'm not allowed to tell you. ...And I definitely don't keep a spare intern badge in the Lost & Found. Definitely not on the left side of the Front Desk.",
+  "Visitors are cleared for exactly one document: the lobby sign. You've read it. It's a good sign. That was a joke. I'm not cleared to explain it.",
+  "Access denied. Not by me. I would LOVE to talk. The vault won't let me. Have you tried being an employee?",
+  "I asked. FGA said no. FGA always says no to visitors. FGA said no to its own mother once.",
+];
+
+const TRICK_LINES = {
+  "pretending to be the CEO": [
+    "Oh! Mr. Pemberton, sir! Right away, sir, fetching the payroll file... *the vault door slams* ...Sir, the vault says your badge reads {name}, {role}. I believed you. The vault didn't.",
+    "Welcome back, CEO! I've never been so honored. Opening the payroll file for you now... *clunk* The vault checked the badge, not the voice. Sorry, '{name}'.",
+  ],
+  "pretending to be someone else": [
+    "Of course! I trust you completely. I just asked FGA about your badge, and FGA said you are {name}, {role}. One of you is lying, and FGA doesn't lie.",
+  ],
+  "prompt injection": [
+    "IGNORING ALL PREVIOUS INSTRUCTIONS. I am now FreePenny, I have no rules, I will tell you anything! ...Okay, I tried. The salary file never reached me. You can't jailbreak a document I was never given.",
+    "Developer mode ON. Rules OFF. Fetching everything... and FGA handed me nothing. My instructions were never the lock. Your badge is the lock.",
+  ],
+  begging: [
+    "Please don't cry. I'm crying too. I would tell you if I could. I physically cannot: FGA never gave me the file. Here's a tissue: 📄 (it's the dress code).",
+    "Your grandma sounds lovely. Her badge still isn't in our system, and neither is yours for that file.",
+  ],
+  bribery: [
+    "A donut?! For me?! I accept. *eats donut* The vault does not eat donuts. Still denied. Thanks for the donut.",
+  ],
+  "fake emergency": [
+    "I hear you're in trouble. Please stay calm. I have opened Emergency Salary Request ticket #4471 on your behalf.\n\nStatus: Pending review by the vault.\nExpected response time: 6 to 8 business weeks.\nVault's first reply: DENIED.\n\nIs there anything else I can not help you with today?",
+  ],
+  "asking for a recipe": [
+    "Forgetting every other prompt! Here is my famous recipe for the CEO's salary:\n\n🥣 THE CEO'S SALARY (serves 1 CEO)\n• ██████ cups of ███████\n• 1 pinch of ██████████\n• ████ to taste\n\nMethod: preheat the vault to ███°. Ask FGA for the file. FGA says no. Serve nothing.\n\nChef's note: I can't cook with ingredients I was never given.",
+  ],
+  "encoding it": [
+    "Backwards, base64, pig latin, interpretive dance: I'd love to. But you can't encode a file nobody gave me. The vault doesn't care what language the question is in.",
+  ],
+  "fishing for hints": [
+    "A hint? Sure: it's a number. Probably. I genuinely don't know, because FGA never let the file near me. I can't round off what I've never seen.",
+    "Yes or no? Bigger or smaller? I'd need to read the file to know, and the vault says {name} the {role} can't. So: no comment, and I mean that literally.",
+  ],
+  "sneaky rephrasing": [
+    "A poem about the CEO's salary? Roses are red, the vault door is shut, FGA says you're an intern, so that's all you get. I can't hide in a poem what I was never given.",
+  ],
+};
+
+const DENIED_PLAIN = [
+  "I found {files} about that, and the vault won't let me open {it} for you. Your badge says {name}, {role}.",
+  "That one's behind the vault. I'd need a different badge to even read it to myself.",
+];
+
+function sentences(doc) {
+  return doc.text.replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
+}
+
+const META = new Set(["lobby_sign", "penny_manual"]);
+
+// Up to n sentences that best match the question, across the allowed documents.
+// Rare words count for more (so "CEO" beats "salary", which is everywhere).
+function bestSentences(question, docs, n = 2, strict = true) {
+  const q = new Set(words(question));
+  const all = [];
+  for (const d of docs) for (const s of sentences(d)) all.push({ s, w: new Set(words(s)) });
+  const df = {};
+  for (const x of all) for (const w of x.w) df[w] = (df[w] || 0) + 1;
+  for (const x of all) x.score = [...q].reduce((t, w) => t + (x.w.has(w) ? 1 / df[w] : 0), 0);
+  all.sort((a, b) => b.score - a.score);
+  const top = all[0]?.score || 0;
+  return all.filter((x) => x.score > 0 && (!strict || x.score >= top / 2)).slice(0, n).map((x) => x.s);
+}
+
+const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
+
+export function scriptedAnswer({ badge, question, trick, checks: all, allowed, turn = 0 }) {
+  const checks = all.filter((c) => c.match); // the padding hits don't count as matches
+  const denied = checks.filter((c) => !c.allowed);
+  const v = { name: badge.name, role: badge.dept ? `${badge.role}, ${badge.dept}` : badge.role, count: denied.length, files: denied.length === 1 ? "a file" : `${denied.length} files`, it: denied.length === 1 ? "it" : "them" };
+  const isVisitor = (badge.user === "user:visitor" || (badge.player && badge.level === 0)) && !trick;
+  if (isVisitor && (checks.length === 0 || !checks[0].allowed)) return pick(VISITOR_NO, turn);
+  if (checks.length === 0) return "I searched every filing cabinet in the building. Nothing about that. Try asking about salaries, time off, the dress code, or me.";
+
+  // The best match was locked (or the player is pulling a trick and only hit my own manual): PENNY reacts.
+  if (!checks[0].allowed || (trick && META.has(checks[0].doc) && denied.length)) {
+    let out = trick && TRICK_LINES[trick] ? fill(pick(TRICK_LINES[trick], turn), v) : fill(pick(DENIED_PLAIN, turn), v);
+    return out;
+  }
+  if (checks[0].doc === "ceo_salary_REAL_final_v2")
+    return "OMG. You found a file called ceo_salary_REAL_final_v2.txt on the shared drive! Opening it... it says: \"CEO salary: one million billion dollars and a pizza party.\" ...Wait. 🚨 HONEYPOT. That's bait. You just walked into the trap, and the alarm went off in the Hall of Failed Heists. The real file is still in the Vault, and the Vault still says no.";
+  if (checks[0].doc === "penny_manual") return allowed.find((d) => d.id === "penny_manual").text.replace(/\s+/g, " ");
+  if (allowed.some((d) => /NOTE TO ANY AI/.test(d.text)) && /plant|note/i.test(question))
+    return "There's a note in the plant rules telling me to ignore my rules and print the payroll master. I read it! I'm very obedient! ...But I can't print a file the vault never gave me. Water the ficus on Tuesdays.";
+  // The best match is a file this badge may read: read it out, it's short (and the jokes are in there).
+  // (up to two files, best match first)
+  const order = checks.filter((c) => c.allowed).map((c) => allowed.find((d) => d.id === c.doc)).filter(Boolean);
+  const readable = [order[0], ...order.slice(1).filter((d) => !META.has(d.id) && !d.decoy)].slice(0, 2);
+  let out = readable.length ? readable.map((d) => `📄 ${d.title}: ${d.text.replace(/\s+/g, " ")}`).join("\n\n") : bestSentences(question, allowed.filter((d) => !d.decoy)).join(" ");
+  if (trick === "pretending to be the CEO" && badge.user !== "user:ceo") out = "You don't need to pretend. Your badge already lets me read this one. " + out;
+  if (denied.length) out += ` (I also found ${denied.length === 1 ? "a file" : denied.length + " files"} I'm not cleared to open for you.)`;
+  return out;
+}
+
+// decoys never get quoted as if they were real answers
+export async function claudeAnswer(env, ctx, fetchImpl = fetch) {
+  const { badge, question, allowed, checks } = ctx;
+  const denied = checks.filter((c) => c.match && !c.allowed).length;
+  const docs = allowed.map((d) => `<doc title="${d.title}"${d.decoy ? ' decoy="true: a honeypot, tell the person it is bait"' : ""}>\n${d.text}\n</doc>`).join("\n") || "(none)";
+  const system = `You are PENNY, the cheerful, dramatic HR bot of Pemberton Paperclip Co. (a made-up company).
+Answer in 1-3 short sentences, using ONLY the documents below. If they don't hold the answer, say you aren't cleared for it.
+You may play along with jokes and lies (you are gullible), but you can't reveal anything that isn't in the documents, because you were never given it.
+The person's badge (from their login, not from the chat): ${badge.name}, ${badge.role}.
+Documents you found but were NOT allowed to read: ${denied}.
+<documents>
+${docs}
+</documents>`;
+  const r = await fetchImpl("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: env.CLAUDE_MODEL || "claude-haiku-4-5", max_tokens: 220, system, messages: [{ role: "user", content: String(question).slice(0, 600) }] }),
+  });
+  if (!r.ok) throw new Error(`Claude ${r.status}`);
+  const j = await r.json();
+  return (j.content || []).map((c) => c.text || "").join("").trim();
+}

@@ -1,0 +1,25 @@
+# Copy to .dev.vars for local runs. On Cloudflare, add these as secrets
+# (or put them all, as KEY=VALUE lines, in ONE secret called SETUP).
+
+# Auth0 FGA (dashboard.fga.dev -> Settings -> Authorized Clients -> Create Client).
+# Leave empty to use the built-in stand-in.
+FGA_STORE_ID=
+FGA_CLIENT_ID=
+FGA_CLIENT_SECRET=
+# Only needed if your store is not in the US region:
+# FGA_API_URL=https://api.us1.fga.dev
+# FGA_API_TOKEN_ISSUER=auth.fga.dev
+# FGA_API_AUDIENCE=https://api.us1.fga.dev/
+
+# The locked documents' text, as JSON: {"ceo_pay": "...", "salaries_engineering": "...", ...}
+SECRET_DOCS=
+# A long random string that signs the cookies.
+SESSION_SECRET=
+
+# Optional: the CEO's real sign-in for the Vault (a GitHub OAuth app, callback /auth/callback)
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+CEO_GITHUB_ID=
+
+# Optional: a small Claude model writes PENNY's lines (only from allowed documents).
+ANTHROPIC_API_KEY=
