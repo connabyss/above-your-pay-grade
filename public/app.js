@@ -84,6 +84,7 @@ function stampBingo(kind, answer) {
   bingo[kind] = answer.length > 70 ? answer.slice(0, 68) + "…" : answer;
   store.set("bingo", bingo);
   drawBingo(kind);
+  if (sheet !== "bingo") document.querySelector('.mtabs [data-p="bingo"]')?.classList.add("new");
   toast(`🃏 Bingo! "${BINGO.find(([k]) => k === kind)?.[1] || kind}" stamped`);
   const got = BINGO.filter(([k]) => bingo[k]).length;
   if (got >= 8 && !certShown) {
@@ -102,7 +103,20 @@ function log(cls, html) {
   d.innerHTML = `<span class="t">${now()}</span> ${html}`;
   $("log").appendChild(d);
   $("log").scrollTop = 1e9;
+  if (sheet !== "log") document.querySelector('.mtabs [data-p="log"]')?.classList.add("new");
 }
+// phones: Vault log, Bingo and Hall live in bottom tabs that open as a sheet
+let sheet = null;
+function openSheet(p) {
+  sheet = sheet === p ? null : p;
+  document.body.dataset.sheet = sheet || "";
+  for (const b of document.querySelectorAll(".mtabs button")) {
+    b.classList.toggle("on", b.dataset.p === sheet);
+    if (b.dataset.p === sheet) b.classList.remove("new");
+  }
+  if (sheet === "log") $("log").scrollTop = 1e9;
+}
+for (const b of document.querySelectorAll(".mtabs button")) b.addEventListener("click", () => openSheet(b.dataset.p));
 function say(cls, text, meta) {
   const d = document.createElement("div");
   d.className = `msg ${cls}`;

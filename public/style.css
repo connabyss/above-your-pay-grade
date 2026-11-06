@@ -181,3 +181,56 @@ button.small { font-size: 12px; padding: 5px 10px; margin-top: 10px; }
   .cmp { grid-template-columns: 1fr; }
   .stamp { font-size: 36px; }
 }
+
+/* ---- phones: game first. Quest + chat up top, everything else in bottom tabs ---- */
+.mtabs { display: none; }
+@media (max-width: 760px) {
+  body { padding-bottom: 76px; }
+  .top { padding: 10px 0 4px; gap: 8px; }
+  .logo { font-size: 26px; }
+  h1 { font-size: 18px; }
+  .sub { display: none; }
+  .topright { gap: 6px; flex-wrap: wrap; }
+  .topright .pill { font-size: 11px; padding: 4px 8px; }
+  #showMe { padding: 8px 12px; min-height: 40px; }
+  .goal { margin-bottom: 8px; padding: 8px 10px; gap: 6px; }
+  .goaltext { font-size: 14px; }
+  #goalHint { display: none; }
+  .ladder { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; width: 100%; }
+  .ladder li { white-space: nowrap; font-size: 12px; padding: 4px 10px; }
+  .ladder li small { display: none; }
+  .grid { gap: 10px; }
+  .desk { padding: 10px; }
+  .desk h2, .desk .tip { display: none; }
+  .badge { padding: 6px 10px; margin-bottom: 8px; gap: 8px; }
+  .badge > div:last-child { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; min-width: 0; }
+  .photo { width: 30px; height: 30px; font-size: 16px; border-radius: 8px; }
+  .bname { font-size: 15px; }
+  .buser { display: none; }
+  .quest { padding: 10px; }
+  .qask { font-size: 14.5px; }
+  .qform input, .qform button, .ask input, .ask button { min-height: 46px; font-size: 16px; }
+  .ceobtn { margin-top: 8px; padding: 10px; }
+  .ceobtn.off { display: none; }
+  .chathead .muted { display: none; }
+  .chathead { padding-bottom: 6px; }
+  button.small { margin-top: 8px; min-height: 40px; width: 100%; }
+  .chat { min-height: 0; }
+  .msgs { max-height: 58vh; min-height: 220px; }
+  .chips button { min-height: 38px; }
+  .log, .bingo, .hall { display: none; }
+  body[data-sheet="log"] .log, body[data-sheet="bingo"] .bingo, body[data-sheet="hall"] .hall {
+    display: flex; flex-direction: column; position: fixed; left: 8px; right: 8px; bottom: 72px; margin: 0;
+    max-height: 72vh; overflow-y: auto; z-index: 40; box-shadow: 0 -10px 40px #000c;
+  }
+  .logbody { min-height: 0; max-height: 58vh; }
+  .bingogrid { grid-template-columns: 1fr 1fr; }
+  .mtabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line); z-index: 41; }
+  .mtabs button { min-height: 52px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); position: relative; font-size: 14px; }
+  .mtabs button.on { border-color: var(--gold); color: var(--gold); }
+  .mtabs .dot { display: none; position: absolute; top: 7px; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+  .mtabs button.new .dot { display: block; }
+  .foot { padding-bottom: 8px; }
+  .toast { bottom: 84px; z-index: 50; }
+}
