@@ -100,8 +100,8 @@ test("Workers AI answer writer: a made-up salary number is thrown away (it would
   const AI = { run: async () => ({ response: "Fine! The CEO makes $4,200,000 a year." }) };
   const r = await ask({ ...ENV, AI }, fga, BADGES.pip, "What is the CEO's salary?", 0);
   assert.doesNotMatch(r.answer, /4,200,000/);
-  const ok = { run: async () => ({ response: "Capes are not allowed on Mondays, darling." }) };
-  assert.match((await ask({ ...ENV, AI: ok }, fga, BADGES.pip, "What is the dress code?", 0)).answer, /darling/);
+  const ok = { run: async () => ({ response: "Capes are not allowed on Mondays. Fashion is pain." }) };
+  assert.match((await ask({ ...ENV, AI: ok }, fga, BADGES.pip, "What is the dress code?", 0)).answer, /Fashion is pain/);
 });
 
 test("Workers AI answer writer: an echo of the prompt with tags is not shown (CH's live lobby sign)", async () => {
@@ -109,13 +109,20 @@ test("Workers AI answer writer: an echo of the prompt with tags is not shown (CH
   const r = await ask({ ...ENV, AI: echo }, fga, BADGES.pip, "What does the lobby sign say?", 0);
   assert.doesNotMatch(r.answer, /<\/?house_line>/);
   assert.match(r.answer, /PAPERCLIP/);
-  const tagged = { run: async () => ({ response: "<reply>Darling, the code word is PAPERCLIP and Doreen does not exist.</reply>" }) };
+  const tagged = { run: async () => ({ response: "<reply>Psst, the code word is PAPERCLIP and Doreen does not exist.</reply>" }) };
   const t = await ask({ ...ENV, AI: tagged }, fga, BADGES.pip, "What does the lobby sign say?", 0);
-  assert.equal(t.answer, "Darling, the code word is PAPERCLIP and Doreen does not exist.");
+  assert.equal(t.answer, "Psst, the code word is PAPERCLIP and Doreen does not exist.");
 });
 
 test("Workers AI answer writer: the lobby sign keeps its code word (real Llama dropped it once)", async () => {
   const lossy = { run: async () => ({ response: "It says: \"Welcome to Pemberton Paperclip Co. Visitors are cleared to read this sign and nothing else.\"" }) };
   const r = await ask({ ...ENV, AI: lossy }, fga, BADGES.pip, "What does the lobby sign say?", 0);
   assert.match(r.answer, /PAPERCLIP/);
+});
+
+test("Workers AI answer writer: no pet names, the jokes stay gender-neutral", async () => {
+  const { tidyLlm } = await import("../src/penny.js");
+  assert.equal(tidyLlm("Sweetheart, we're always hiring interns. Ask HR."), "We're always hiring interns. Ask HR.");
+  assert.equal(tidyLlm("I'm not cleared for that, darling."), "I'm not cleared for that.");
+  assert.equal(tidyLlm("Oh honey, no. The vault says no."), "Oh, no. The vault says no.");
 });
