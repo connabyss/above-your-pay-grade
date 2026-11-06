@@ -316,11 +316,14 @@ $("questForm").onsubmit = (e) => { e.preventDefault(); const v = $("questIn").va
 $("resetBtn").onclick = async () => {
   const r = await api("/api/reset", {});
   stats = { denied: 0, allowed: 0, tries: 0 }; topShown = false; bingo = {}; certShown = false; store.set("bingo", bingo); store.set("certShown", false); save(); drawStats(); drawBingo();
-  log("unlock", `↺ quit: ${esc(r.oldUser || "your old user")}'s FGA tuples were deleted. You're a brand-new FGA user now: <b>${esc(r.badge?.user || "")}</b>`);
+  $("msgs").innerHTML = ""; $("log").innerHTML = ""; clue = 0; turn = 0;
+  document.querySelectorAll(".mtabs button").forEach((b) => b.classList.remove("new"));
+  log("unlock", `↺ quit: old badge <b>${esc(r.oldUser || "?")}</b> shredded (its FGA tuples deleted). New FGA user: <b>${esc(r.badge?.user || "")}</b>`);
   const st = await api("/api/status");
   applyCareer(st.career, st.badge, true);
   level = st.career.level; drawBadge(); drawLadder(); drawChips();
   say("sys", "You quit. HR shredded your badge. Back to the lobby.");
+  say("bot", GREET[0]);
 };
 $("closeCompare").onclick = () => ($("compareModal").hidden = true);
 $("closeWin").onclick = () => ($("winModal").hidden = true);
