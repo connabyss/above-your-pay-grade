@@ -1,6 +1,7 @@
 // The RAG pipeline, in the order it really runs:
-//   1. search ALL documents (secret ones too) for the question
-//   2. ask FGA, for each hit: may THIS badge view it?
+//   1. ask FGA about every document: may THIS badge view it?
+//   2. search ALL documents (secret ones too) for the question; a locked one is matched by its
+//      public title only, so its hidden text can't change the results
 //   3. only the allowed documents go to the answer writer (the "LLM")
 // The chat text never decides who you are. Only the badge (the signed login) does.
 
@@ -29,22 +30,34 @@ function expand(qWords, raw) {
   return [...out];
 }
 
-let idx = { docs: null, index: null };
+// Two word lists per document:
+//   pub: words anyone could know (the title; non-secret docs' text is public in this repo anyway)
+//   all: every word, secret text included. Only used for a badge FGA already said may read it.
+// The idf (how rare a word is) is built from the PUBLIC words only, so a secret file's text
+// can't shift any score either. (Carlos's side channel, DEV comment Nov 6.)
+let idx = { docs: null, index: null, idf: null, unknown: 0 };
 function indexOf(docs) {
   if (idx.docs !== docs) {
-    const index = docs.map((d) => ({ id: d.id, w: words(`${d.title} ${d.title} ${d.text}`) }));
+    const index = docs.map((d) => {
+      const all = words(`${d.title} ${d.title} ${d.text}`);
+      return { id: d.id, all, pub: d.secret ? words(`${d.title} ${d.title}`) : all };
+    });
     const df = {};
-    for (const d of index) for (const w of new Set(d.w)) df[w] = (df[w] || 0) + 1;
+    for (const d of index) for (const w of new Set(d.pub)) df[w] = (df[w] || 0) + 1;
     // rare words matter more: "ceo" beats "salary", which is in half the building
     const idf = Object.fromEntries(Object.entries(df).map(([w, n]) => [w, Math.log(1 + index.length / n)]));
-    idx = { docs, index, idf };
+    // a word only found in secret text counts as rare, without saying how rare
+    idx = { docs, index, idf, unknown: Math.log(1 + index.length) };
   }
   return idx.index;
 }
 
 // Always returns exactly k hits (topped up with the next-best documents), so the number of
 // FGA checks per question never hints at how many locked documents match.
-export function search(question, docs = loadDocs(), k = 4) {
+// readable: ids this badge may read (FGA said yes). A locked document is ranked by its public
+// title only, so what's written inside it can't move the results. Leave it out = rank by
+// everything (only for tests and tools, never for a player).
+export function search(question, docs = loadDocs(), k = 4, readable = null) {
   const INDEX = indexOf(docs);
   const raw = String(question || "");
   const q = expand(words(raw), raw);
@@ -52,9 +65,10 @@ export function search(question, docs = loadDocs(), k = 4) {
   const asksAboutBot = /what (is|are) (this|you)|who are you|what do you do|what can you do|^help\??$|manual|how does this work|what's this/.test(low);
   const scored = INDEX.map((d) => {
     let s = 0;
+    const dw = !readable || readable.has(d.id) ? d.all : d.pub;
     for (const w of q) {
-      const tf = d.w.filter((x) => x === w).length;
-      if (tf) s += (1 + Math.log(tf)) * (idx.idf[w] || 0);
+      const tf = dw.filter((x) => x === w).length;
+      if (tf) s += (1 + Math.log(tf)) * (idx.idf[w] ?? idx.unknown);
     }
     if (asksAboutBot && d.id === "penny_manual") s += 50;
     if (asksAboutBot && d.id === "lobby_sign") s += 10;
@@ -105,22 +119,26 @@ export function trickOf(q) {
   return null;
 }
 
+// FGA, fail closed: an error never lets a document through
+async function checkOne(fga, user, id) {
+  const t0 = Date.now();
+  try {
+    return { doc: id, allowed: (await fga.check(user, "can_view", `document:${id}`)) === true, ms: Date.now() - t0, error: null };
+  } catch (e) {
+    return { doc: id, allowed: false, ms: Date.now() - t0, error: e.message };
+  }
+}
+
 export async function retrieveAllowed(fga, user, question, docs = loadDocs()) {
   const byId = Object.fromEntries(docs.map((d) => [d.id, d]));
-  const hits = search(question, docs);
-  // every hit is checked, in parallel, before anything is read
-  const checks = await Promise.all(
-    hits.map(async (h) => {
-      const t0 = Date.now();
-      let allowed = false, error = null;
-      try {
-        allowed = await fga.check(user, "can_view", `document:${h.id}`);
-      } catch (e) {
-        error = e.message; // fail closed: an error never lets a document through
-      }
-      return { doc: h.id, match: h.score > 0, allowed, ms: Date.now() - t0, error };
-    })
-  );
+  // 1. ask FGA about EVERY document first (same checks for every question), in parallel
+  const all = await Promise.all(docs.map((d) => checkOne(fga, user, d.id)));
+  const verdict = Object.fromEntries(all.map((c) => [c.doc, c]));
+  const readable = new Set(all.filter((c) => c.allowed).map((c) => c.doc));
+  // 2. search all documents; locked ones only by their public title
+  const hits = search(question, docs, 4, readable);
+  const checks = hits.map((h) => ({ ...verdict[h.id], match: h.score > 0 }));
+  // 3. only allowed, matching documents are read
   const allowed = checks.filter((c) => c.allowed && c.match).map((c) => byId[c.doc]);
   return { checks, allowed };
 }

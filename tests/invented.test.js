@@ -52,9 +52,10 @@ test("7. no streaming: the answer is written only after the FGA filter ran", asy
   let checked = 0;
   const spy = { kind: "spy", check: async (...a) => { checked++; return fga.check(...a); } };
   let sawChecksFirst = false;
-  const fakeClaude = async () => { sawChecksFirst = checked === 4; return new Response(JSON.stringify({ content: [{ text: "x" }] })); };
+  const total = loadDocs(ENV).length; // every document is checked before the search runs
+  const fakeClaude = async () => { sawChecksFirst = checked === total; return new Response(JSON.stringify({ content: [{ text: "x" }] })); };
   await ask({ ...ENV, ANTHROPIC_API_KEY: "k" }, spy, BADGES.pip, "CEO salary?", 0, fakeClaude);
-  assert.ok(sawChecksFirst, "all 4 FGA checks finished before the LLM was called");
+  assert.ok(sawChecksFirst, `all ${total} FGA checks finished before the LLM was called`);
 });
 
 test("8. errors don't leak names: an FGA error mentioning the file shows only 'failed closed'", async () => {
