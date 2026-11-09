@@ -49,6 +49,8 @@ export class LocalFga {
   }
 }
 
+const TOKENS = new Map(); // FGA_CLIENT_ID -> { token, exp } or { pending }
+
 export class Auth0Fga {
   constructor(env, fetchImpl = (...a) => fetch(...a)) {
     this.env = env;
@@ -62,8 +64,30 @@ export class Auth0Fga {
     this._tokenExp = 0;
   }
 
+  // One sign-in shared by every check in the worker (a question now runs one check per document,
+  // in parallel; without this each of them would fetch its own token).
   async token() {
     if (this._token && Date.now() < this._tokenExp) return this._token;
+    const key = this.env.FGA_CLIENT_ID;
+    const hit = TOKENS.get(key);
+    if (hit && (hit.pending || Date.now() < hit.exp)) {
+      const t = await (hit.pending || hit.token);
+      this._token = t; this._tokenExp = TOKENS.get(key)?.exp || 0;
+      return t;
+    }
+    const pending = this.signIn();
+    TOKENS.set(key, { pending });
+    try {
+      const t = await pending;
+      TOKENS.set(key, { token: t, exp: this._tokenExp });
+      return t;
+    } catch (e) {
+      TOKENS.delete(key);
+      throw e;
+    }
+  }
+
+  async signIn() {
     const issuer = (this.env.FGA_API_TOKEN_ISSUER || "auth.fga.dev").replace(/^https?:\/\//, "").replace(/\/$/, "");
     const audience = this.env.FGA_API_AUDIENCE || `${this.apiUrl}/`;
     const r = await this.fetch(`https://${issuer}/oauth/token`, {

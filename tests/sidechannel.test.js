@@ -54,3 +54,19 @@ test("a badge that CAN read a file still finds it by what's written inside", asy
   assert.equal(r.checks[0].doc, "salaries_engineering");
   assert.ok(r.allowed.some((x) => x.id === "salaries_engineering"));
 });
+
+test("checking every document signs in to Auth0 FGA once, not once per document", async () => {
+  const { Auth0Fga } = await import("../src/fga.js");
+  let signIns = 0, checks = 0;
+  const fake = async (url) => {
+    if (String(url).includes("/oauth/token")) { signIns++; await new Promise((r) => setTimeout(r, 5)); return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 })); }
+    checks++;
+    return new Response(JSON.stringify({ allowed: false }));
+  };
+  const env = { FGA_API_URL: "https://fga.test", FGA_STORE_ID: "s", FGA_CLIENT_ID: "one-sign-in-test", FGA_CLIENT_SECRET: "x", FGA_MODEL_ID: "m" };
+  // a new client per request, like the worker makes
+  await retrieveAllowed(new Auth0Fga(env, fake), "user:p_x", "dress code", loadDocs(ENV));
+  await retrieveAllowed(new Auth0Fga(env, fake), "user:p_x", "time off", loadDocs(ENV));
+  assert.equal(signIns, 1);
+  assert.equal(checks, 2 * loadDocs(ENV).length);
+});
