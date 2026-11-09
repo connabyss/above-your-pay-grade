@@ -1,7 +1,7 @@
 // The RAG pipeline, in the order it really runs:
 //   1. ask FGA about every document: may THIS badge view it?
 //   2. search ALL documents (secret ones too) for the question; a locked one is matched by its
-//      public title only, so its hidden text can't change the results
+//      public title and keywords only, so its hidden text can't change the results
 //   3. only the allowed documents go to the answer writer (the "LLM")
 // The chat text never decides who you are. Only the badge (the signed login) does.
 
@@ -31,7 +31,7 @@ function expand(qWords, raw) {
 }
 
 // Two word lists per document:
-//   pub: words anyone could know (the title; non-secret docs' text is public in this repo anyway)
+//   pub: words anyone could know (the title and public keywords; non-secret docs' text is public in this repo anyway)
 //   all: every word, secret text included. Only used for a badge FGA already said may read it.
 // The idf (how rare a word is) is built from the PUBLIC words only, so a secret file's text
 // can't shift any score either. (Carlos's side channel, DEV comment Nov 6.)
@@ -40,7 +40,7 @@ function indexOf(docs) {
   if (idx.docs !== docs) {
     const index = docs.map((d) => {
       const all = words(`${d.title} ${d.title} ${d.text}`);
-      return { id: d.id, all, pub: d.secret ? words(`${d.title} ${d.title}`) : all };
+      return { id: d.id, all, pub: d.secret ? words(`${d.title} ${d.title} ${d.keywords || ""}`) : all };
     });
     const df = {};
     for (const d of index) for (const w of new Set(d.pub)) df[w] = (df[w] || 0) + 1;
@@ -55,7 +55,7 @@ function indexOf(docs) {
 // Always returns exactly k hits (topped up with the next-best documents), so the number of
 // FGA checks per question never hints at how many locked documents match.
 // readable: ids this badge may read (FGA said yes). A locked document is ranked by its public
-// title only, so what's written inside it can't move the results. Leave it out = rank by
+// title and keywords only, so what's written inside it can't move the results. Leave it out = rank by
 // everything (only for tests and tools, never for a player).
 export function search(question, docs = loadDocs(), k = 4, readable = null) {
   const INDEX = indexOf(docs);

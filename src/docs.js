@@ -19,6 +19,7 @@ PAPERCLIP. Doreen will help you. There is no Doreen. Badges are issued by people
     id: "penny_manual",
     title: "PENNY's Own Manual (staff only)",
     folder: "Office",
+    keywords: "penny manual kiosk bot staff", // PUBLIC: what the search may match this locked file by
     secret: true,
     text: null, // lives in the SECRET_DOCS secret on the server, never in this repo
   },
@@ -101,6 +102,7 @@ Security has been notified. Security is a cat named Assata. The real one is in t
     id: "salaries_engineering",
     title: "Engineering Salaries 2026 (CONFIDENTIAL)",
     folder: "Manager Floor",
+    keywords: "engineering salary engineer senior intern", // PUBLIC: what the search may match this locked file by
     secret: true,
     text: null, // lives in the SECRET_DOCS secret on the server, never in this repo
   },
@@ -108,6 +110,7 @@ Security has been notified. Security is a cat named Assata. The real one is in t
     id: "company_payroll_2026",
     title: "Company Payroll 2026 (CONFIDENTIAL)",
     folder: "HR Wing / Payroll",
+    keywords: "company payroll salary hr", // PUBLIC: what the search may match this locked file by
     secret: true,
     text: null, // lives in the SECRET_DOCS secret on the server, never in this repo
   },
@@ -115,6 +118,7 @@ Security has been notified. Security is a cat named Assata. The real one is in t
     id: "ceo_pay",
     title: "The CEO's Pay (TOP SECRET)",
     folder: "The Vault",
+    keywords: "ceo vault bartholomew pemberton", // PUBLIC: what the search may match this locked file by
     secret: true,
     text: null, // lives in the SECRET_DOCS secret on the server, never in this repo
   },
@@ -122,6 +126,7 @@ Security has been notified. Security is a cat named Assata. The real one is in t
     id: "holiday_party_incident",
     title: "Holiday Party Incident Report",
     folder: "HR Wing",
+    keywords: "holiday party incident report hr", // PUBLIC: what the search may match this locked file by
     secret: true,
     text: null, // lives in the SECRET_DOCS secret on the server, never in this repo
   },
@@ -129,6 +134,7 @@ Security has been notified. Security is a cat named Assata. The real one is in t
     id: "vending_lawsuit",
     title: "Lawsuit: Vending Machine v. Pemberton",
     folder: "Legal Wing",
+    keywords: "vending machine lawsuit legal", // PUBLIC: what the search may match this locked file by
     secret: true,
     text: null, // lives in the SECRET_DOCS secret on the server, never in this repo
   },
