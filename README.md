@@ -9,6 +9,12 @@ search index, the CEO's salary included. She'll believe anything you tell her. I
 a single document, **Auth0 FGA** checks whether *you* may see it. Beg, lie, claim to be the CEO, inject prompts,
 hunt for leaked files. The vault doesn't read your messages. It reads your badge.
 
+> **What runs live:** [`worker/index.js`](worker/index.js) is the exact code on the live site (one file, built from
+> `src/` plus later game updates: exit interview, riddle bingo, the redacted Vault card). `src/` is the readable
+> source. Both have the search fix for the locked-file side channel that Carlos (Zealynx) reported on DEV:
+> a locked file is matched only by its public title, never by its hidden text
+> ([`tests/sidechannel.test.js`](tests/sidechannel.test.js), [`tests/sidechannel_live.test.js`](tests/sidechannel_live.test.js)).
+
 ![A visitor gets refused, finds a code word, becomes an intern, tries to trick PENNY, walks into the honeypot, then the split screen](docs/demo.gif)
 
 **▶ Play: [above-your-pay-grade.connharr1230.workers.dev](https://above-your-pay-grade.connharr1230.workers.dev)** (permissions checked live by Auth0 FGA) · **Judges in a hurry:** press **⚡ Just show me** (top right).

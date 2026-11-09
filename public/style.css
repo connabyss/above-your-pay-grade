@@ -234,3 +234,142 @@ button.small { font-size: 12px; padding: 5px 10px; margin-top: 10px; }
   .foot { padding-bottom: 8px; }
   .toast { bottom: 84px; z-index: 50; }
 }
+
+/* ---- 2026-11-06 rebuild: desktop two-column layout (>=1000px only) ---- */
+@media (min-width: 880px) {
+  .top, .goal, .grid, .bingo, .hall, .foot { max-width: 1280px; box-sizing: border-box; }
+  .top { margin: 0 auto; padding: 18px 24px 8px; }
+  .goal, .bingo, .hall { max-width: 1232px; }
+  .goal { margin: 8px auto 14px; width: calc(100% - 48px); }
+  .grid { margin: 0 auto; padding: 0 24px 16px; grid-template-columns: minmax(300px, 34%) minmax(0, 1fr); grid-template-rows: auto 1fr; align-items: start; }
+  .bingo { margin: 0 auto 14px; width: calc(100% - 48px); }
+  .hall { margin: 0 auto 16px; width: calc(100% - 48px); }
+  .foot { margin-left: auto; margin-right: auto; }
+  .desk { grid-column: 1; grid-row: 1; }
+  .log { grid-column: 1; grid-row: 2; }
+  .logbody { min-height: 200px; max-height: 360px; }
+  .chat { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 12px; height: max(460px, min(calc(100vh - 310px), 860px)); }
+  .msgs { max-height: none; min-height: 0; }
+  .chat .ask { flex-shrink: 0; }
+}
+
+
+/* end screen: breathing room above the button; no toast on top of an open modal */
+.win #closeWin { margin-top: 10px; }
+.modal:not([hidden]) ~ .toast { visibility: hidden; }
+
+/* ---- bingo progress, stickers, exit interview, brag card, Hall of Fame ---- */
+.bingochip { margin-left: auto; background: var(--panel2); color: var(--gold); border: 1px solid #f2c14e66; border-radius: 99px; padding: 4px 12px; font-size: 13px; white-space: nowrap; }
+.bingochip b { color: var(--gold); }
+.stickers { display: flex; flex-wrap: wrap; gap: 4px; font-size: 20px; margin: 10px 0 0; }
+.stickers:empty { display: none; }
+.exitbtn { display: block; width: 100%; margin-top: 12px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+.exitbtn.hot { background: var(--gold); color: #1a1405; border-color: var(--gold); animation: pulse 1.2s 3; box-shadow: 0 0 16px #f2c14e55; }
+.exitbox { max-width: 620px; text-align: center; }
+.exitbox .file { text-align: left; list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 10px; }
+.exitbox .file li { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+.tchip { display: inline-block; background: #0b0d12; border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px; margin: 3px 3px 0 0; font-size: 12.5px; }
+.fired { font: 56px/1.1 "Special Elite", monospace; color: var(--red); border: 5px solid var(--red); border-radius: 10px; display: inline-block; padding: 6px 18px; transform: rotate(-6deg); margin: 18px 0 10px; }
+.fired.on { animation: stamp 1.2s ease-out; }
+.rehired .beat { margin: 6px 0; font-size: 17px; }
+.rehired .rank { font-size: 30px; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+#bragCanvas { width: 100%; max-width: 420px; height: auto; aspect-ratio: 1; border-radius: 12px; border: 1px solid var(--line); margin: 12px auto 6px; display: block; }
+.bragbtns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.fame { margin-bottom: 12px; }
+.fame h3 { margin: 0 0 6px; font-size: 15px; }
+.fame ol { margin: 0; padding-left: 26px; display: grid; gap: 4px; font-size: 14px; }
+@media (max-width: 760px) {
+  .fired { font-size: 40px; }
+  .rehired .rank { font-size: 24px; }
+  .exitbtn { min-height: 46px; }
+  .bragbtns button { flex: 1 1 140px; min-height: 44px; }
+  .mtabs button { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .fired.on, .exitbtn.hot { animation: none; } }
+.exitbtn[hidden] { display: none; }
+.exitbox .close { z-index: 3; }
+.exitbox .fired { position: relative; z-index: 1; }
+@media (max-width: 760px) { .exitbox .fired { margin-top: 40px; } }
+/* the big rotated stamp is wider than the chat; clip (not hidden) so nothing can scroll the panel sideways */
+.chat { overflow: clip; }
+
+/* ---- next-step button: the heist hint you can tap (gold fill + arrow + words, not colour alone) ---- */
+.heistnext { margin-top: 10px; }
+.heistnext[hidden] { display: none; }
+.heistnext.inchat { margin: 8px 0 0; flex-shrink: 0; }
+.nextbtn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left;
+  background: var(--gold); color: #1a1405; border: 2px solid #fff3; border-radius: 12px; padding: 9px 13px; box-shadow: 0 0 14px #f2c14e44; }
+.nextbtn .nl { font-size: 12px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+.nextbtn .nq { font-size: 15px; font-weight: 700; color: #1a1405; }
+.nextbtn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.nextbtn.wiggle { animation: pulse 1.2s 3; }
+.msg.bot.nudge { border: 2px dashed var(--gold); }
+.msg.bot.nudge::before { content: "💡 "; }
+@media (max-width: 760px) { .nextbtn { min-height: 52px; } .nextbtn .nq { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { .nextbtn.wiggle { animation: none; } }
+
+/* sticker row: labelled, so it doesn't look like a stray emoji */
+.stickers { align-items: center; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
+.stickers::before { content: "Your stickers"; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+
+/* ---- ending beats: each its own screen, centred ---- */
+.beatscreen.in { animation: beatin 0.45s ease-out; }
+@keyframes beatin { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+#exitVerdict { min-height: min(60vh, 420px); display: grid; place-items: center; }
+#exitVerdict[hidden], #exitRehired[hidden], #exitBrag[hidden] { display: none; }
+.exitbox #exitVerdict .fired { margin: 0; }
+.modal.dim { background: #000e; transition: background 0.4s; }
+#exitRehired { padding: 18px 0 6px; }
+#exitRehired .rank { animation: rankin 0.7s 0.15s both cubic-bezier(.2,1.4,.4,1); }
+@keyframes rankin { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+#exitToBrag { margin-top: 14px; }
+#exitBrag h2 { color: var(--gold); }
+@media (max-width: 760px) { .exitbox .fired { margin-top: 0; } #exitVerdict { min-height: 55vh; } }
+@media (prefers-reduced-motion: reduce) { .beatscreen.in, #exitRehired .rank { animation: none; } }
+.card i { font-style: italic; color: var(--muted); }
+/* FIRED slam: its own keyframes (the chat stamp's are positioned for the chat), nothing clipped */
+.modal.dim .exitbox { overflow: visible; }
+.exitbox #exitFired.on { animation: firedslam 0.5s cubic-bezier(.3,1.5,.5,1) both; }
+@keyframes firedslam { 0% { opacity: 0; transform: rotate(-6deg) scale(1.7); } 60% { opacity: 1; } 100% { opacity: 1; transform: rotate(-6deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .exitbox #exitFired.on { animation: none; } }
+
+/* ---- redacted Vault file card ---- */
+.vaultcard { position: relative; overflow: hidden; margin: 0 0 14px; padding: 12px 14px; border-radius: 12px; background: #f3ead2; color: #2a2210; border: 1px solid #c9b98f; box-shadow: 0 6px 20px #0006; }
+.vaultcard[hidden] { display: none; }
+.vchead { display: flex; gap: 10px; align-items: center; }
+.vcicon { font-size: 22px; }
+.vaultcard b { color: #1a1405; }
+.vcmeta { font: 11.5px var(--mono); color: #6b5d3a; }
+.vcbody { margin: 10px 0 8px; display: grid; gap: 6px; }
+.vcbody i { display: block; height: 11px; background: #14110a; border-radius: 2px; }
+.vcbody i.gap { background: none; height: 5px; }
+.vcbody .more { font: 11px var(--mono); color: #6b5d3a; }
+.vcfoot { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: #4a3f25; }
+.vcfoot code { font: 12px var(--mono); color: #1a1405; background: #e4d7b3; padding: 0 4px; border-radius: 4px; }
+.vcdenied { margin-top: 6px; font-size: 12.5px; font-weight: 700; color: #8a1020; }
+.vcstamp { position: absolute; right: 12px; top: 34px; font: 30px "Special Elite", monospace; color: #b3121f; border: 4px solid #b3121f; border-radius: 6px; padding: 0 10px; transform: rotate(-12deg); opacity: 0; pointer-events: none; background: #f3ead2cc; }
+.vcstamp.on { animation: vcthump 1.8s ease-out both; }
+@keyframes vcthump { 0% { opacity: 0; transform: rotate(-12deg) scale(1.8); } 14% { opacity: 1; transform: rotate(-12deg) scale(1); } 75% { opacity: 1; } 100% { opacity: 0.0; } }
+.vaultcard.thump { animation: vccard 0.35s ease-out; }
+@keyframes vccard { 30% { transform: translateY(2px) scale(0.99); } }
+@media (prefers-reduced-motion: reduce) {
+  .vaultcard.thump { animation: none; }
+  .vcstamp.on { animation: vcfade 1.8s step-end both; }
+  @keyframes vcfade { 0% { opacity: 1; transform: rotate(-12deg); } 100% { opacity: 0; } }
+}
+/* vault card: never squashed in the phone sheet; the stamp lands on the redacted lines, not the title */
+.vaultcard { flex-shrink: 0; }
+.vcstamp { top: 50%; left: 50%; right: auto; transform: translate(-50%, -50%) rotate(-12deg); }
+@keyframes vcthump { 0% { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg) scale(1.8); } 14% { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg) scale(1); } 75% { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg); } 100% { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg); } }
+@media (prefers-reduced-motion: reduce) { @keyframes vcfade { 0% { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg); } 100% { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg); } } }
+
+/* next-step button after it was tapped: still tappable, quieter, with a tick */
+.nextbtn.asked { background: var(--panel2); color: var(--text); border-color: var(--gold); box-shadow: none; }
+.nextbtn.asked .nq { color: var(--gold); }
+/* phones: end screens clear the bottom tab bar */
+@media (max-width: 760px) { .modal { padding-bottom: 84px; } .modal:not([hidden]) ~ .mtabs { visibility: hidden; } }
+
+/* long pasted text wraps inside the bubble (no sideways scroll); empty HR answer gets a nudge */
+.msg { overflow-wrap: anywhere; }
+.qform input.nudge { animation: shake 0.4s; outline: 2px solid var(--gold); }
+@media (prefers-reduced-motion: reduce) { .qform input.nudge { animation: none; } }

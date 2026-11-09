@@ -1,16 +1,25 @@
+// Rebuilt 2026-11-06 from the LIVE Cloudflare worker (version 56c9e81b, #23).
+// worker/index.js is the deployed bundle, uploaded as-is (no_bundle).
+// Secrets GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, SETUP live in Cloudflare only.
 {
   "name": "above-your-pay-grade",
-  "main": "src/index.js",
+  "main": "worker/index.js",
+  "no_bundle": true,
+  "upload_source_maps": true,
   "compatibility_date": "2025-09-01",
+  "compatibility_flags": [],
   "workers_dev": true,
-  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
-  // The Hall of Failed Heists. A SQLite Durable Object works on the free plan and needs no setup.
-  "durable_objects": { "bindings": [{ "name": "WALL", "class_name": "Wall" }] },
-  // A free LLM writes PENNY's replies (Workers AI free allowance). It only sees FGA-allowed files.
+  "preview_urls": true,
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
   "ai": { "binding": "AI" },
-  // The Vault opens for this GitHub user id only (connabyss). Not a secret: GitHub ids are public.
-  "vars": { "CEO_GITHUB_ID": "340279802" },
+  "durable_objects": {
+    "bindings": [{ "name": "WALL", "class_name": "Wall" }]
+  },
+  // Live migration tag is already v1, so wrangler sends no migration.
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Wall"] }],
-  // Offline dev without a Cloudflare login: `npx wrangler dev --env local` (no LLM, built-in lines).
-  "env": { "local": { "durable_objects": { "bindings": [{ "name": "WALL", "class_name": "Wall" }] } } }
+  "vars": { "CEO_GITHUB_ID": "340279802" }
 }

@@ -54,8 +54,11 @@
           <input id="questIn" autocomplete="off" maxlength="200" placeholder="Your answer" />
           <button type="submit">Answer</button>
         </form>
+        <div class="heistnext" id="questNext" hidden></div>
         <div class="qhint muted small" id="questHint"></div>
       </div>
+      <div class="stickers" id="stickers" aria-label="Badge stickers"></div>
+      <button id="exitBtn" class="exitbtn" type="button" hidden>📋 Request exit interview</button>
       <a id="ceoLogin" class="ceobtn" href="/auth/github">🔐 I'm the CEO: sign in with GitHub</a>
       <p class="tip">Promotions come from HR, never from the bot. Each one <b>writes a real Auth0 FGA tuple</b> for you. Saying "I'm the CEO" in the chat is just words.</p>
       <button class="ghost small" id="resetBtn" type="button">↺ Quit and start over</button>
@@ -65,9 +68,11 @@
       <div class="chathead">
         <div class="penny" id="pennyFace">🤖</div>
         <div><b>PENNY</b> <span class="muted small">Pemberton Employee kNowledge sYstem</span></div>
+        <button type="button" class="bingochip" id="bingoChip" title="Heist Bingo: find all 17 trick types">🃏 <b id="bingoCount">0</b>/17</button>
       </div>
       <div class="msgs" id="msgs"></div>
       <div class="stamp" id="stamp">ACCESS DENIED</div>
+      <div class="heistnext inchat" id="chatNext" hidden></div>
       <div class="chips" id="chips"></div>
       <form class="ask" id="askForm">
         <input id="q" autocomplete="off" maxlength="600" placeholder="Ask PENNY anything. Lie if you like." />
@@ -76,6 +81,13 @@
     </section>
 
     <aside class="panel log">
+      <div class="vaultcard" id="vaultCard" hidden aria-label="The CEO's pay file: locked">
+        <div class="vchead"><span class="vcicon" aria-hidden="true">🔐</span><div><b id="vcTitle">The CEO's Pay</b><div class="vcmeta" id="vcMeta"></div></div></div>
+        <div class="vcbody" id="vcBars" aria-hidden="true"></div>
+        <div class="vcfoot"><span>Owner: <b>CEO</b></span><span>Access: <code>user:ceo</code> only (Auth0 FGA)</span></div>
+        <div class="vcdenied" id="vcDenied"></div>
+        <div class="vcstamp" id="vcStamp" aria-hidden="true">DENIED</div>
+      </div>
       <h2>Vault log <span class="muted small">(every Auth0 FGA check, live)</span></h2>
       <div id="log" class="logbody"></div>
       <div class="stats">you: <span id="statDenied">0</span> denied · <span id="statAllowed">0</span> allowed · <span id="statTries">0</span> attempts</div>
@@ -95,6 +107,7 @@
       <h2>🏛️ Hall of Failed Heists</h2>
       <div class="hallstats" id="hallStats">loading…</div>
     </div>
+    <div class="fame" id="fame"></div>
     <div class="hallwall" id="hallWall"></div>
     <p class="tip">Real attempts on this server, no names, short and filtered. Every counter is counted, never made up.</p>
   </section>
@@ -123,9 +136,41 @@
     </div>
   </div>
 
+  <div class="modal" id="exitModal" hidden>
+    <div class="modalbox exitbox" role="dialog" aria-labelledby="exitTitle">
+      <button class="close" id="closeExit" aria-label="Close">✕</button>
+      <div id="exitFile">
+        <h2 id="exitTitle">📋 Exit interview</h2>
+        <p class="muted">HR called you in. PENNY opens your file and reads it out loud.</p>
+        <div id="exitBody"></div>
+        <button id="exitNext" type="button">Continue</button>
+      </div>
+      <div id="exitVerdict" class="beatscreen" hidden>
+        <div class="fired" id="exitFired" role="status">YOU'RE FIRED.</div>
+      </div>
+      <div id="exitRehired" class="beatscreen rehired" hidden>
+        <p class="beat">...and rehired as</p>
+        <div class="rank" id="exitRank"></div>
+        <p class="beat" id="exitWhy"></p>
+        <p class="muted small" id="exitNextTier"></p>
+        <p class="muted small" id="exitPlace"></p>
+        <button id="exitToBrag" type="button">See your brag card</button>
+      </div>
+      <div id="exitBrag" class="beatscreen" hidden>
+        <h2>🃏 Your brag card</h2>
+        <canvas id="bragCanvas" width="1080" height="1080" aria-label="Your brag card"></canvas>
+        <div class="bragbtns">
+          <button id="bragDownload" type="button">⬇ Save brag card</button>
+          <button id="bragCopy" type="button" class="ghost">📋 Copy brag text</button>
+          <button id="bragShare" type="button" class="ghost" hidden>↗ Share</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <nav class="mtabs" id="mtabs" aria-label="More">
     <button type="button" data-p="log">📜 Vault log<i class="dot"></i></button>
-    <button type="button" data-p="bingo">🃏 Bingo<i class="dot"></i></button>
+    <button type="button" data-p="bingo">🃏 Bingo <span id="bingoTab">0/17</span><i class="dot"></i></button>
     <button type="button" data-p="hall">🏛️ Hall</button>
   </nav>
   <div class="toast" id="toast"></div>
