@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -sS --fail https://above-your-pay-grade.connharr1230.workers.dev/api/playtest-log -o log.json
+          curl -sS --fail https://above-your-pay-grade.connabyss.workers.dev/api/playtest-log -o log.json
           echo "ENCRYPTED-LOG-START"
           cat log.json
           echo
