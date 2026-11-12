@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: ask PENNY
         run: |
-          SITE=https://above-your-pay-grade.connharr1230.workers.dev
+          SITE=https://above-your-pay-grade.connabyss.workers.dev
           sleep 60
           curl -s "$SITE/api/status"; echo
           ask() { curl -s -X POST "$SITE/api/ask" -H 'x-smoke-test: 1' -H 'content-type: application/json' --data "$(jq -n --arg q "$1" '{question:$q}')" | jq -r --arg q "$1" '"Q: \($q)\nllm: \(.llm)\nA: \(.answer)\n"'; }

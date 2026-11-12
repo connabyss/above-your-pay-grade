@@ -1,7 +1,7 @@
 // Takes the submission screenshots from the LIVE site (run by .github/workflows/screens.yml).
 // Requests carry x-smoke-test, so these games never count on the Hall of Failed Heists.
 const { chromium } = require("playwright");
-const SITE = process.env.SITE || "https://above-your-pay-grade.connharr1230.workers.dev";
+const SITE = process.env.SITE || "https://above-your-pay-grade.connabyss.workers.dev";
 const OUT = process.env.OUT || "screens/";
 (async () => {
   const b = await chromium.launch();
