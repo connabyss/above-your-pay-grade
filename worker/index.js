@@ -144,6 +144,10 @@ var LocalFga = class {
     const rel = relation === "can_view" ? "viewer" : relation;
     return this._has(user, rel, object);
   }
+  // Many checks for one user at once; each answer is { allowed, error }.
+  async checkMany(user, relation, objects) {
+    return Promise.all(objects.map((o) => this.check(user, relation, o).then((a) => ({ allowed: a === true, error: null }), (e) => ({ allowed: false, error: e.message }))));
+  }
   async setup() {
     return { model: "built in", tuples: this.tuples.length };
   }
@@ -210,12 +214,17 @@ var Auth0Fga = class {
     this._tokenExp = Date.now() + Math.max(60, (j.expires_in || 3600) - 60) * 1e3;
     return this._token;
   }
-  async api(path, body, method = "POST") {
-    const r = await this.fetch(`${this.apiUrl}/stores/${this.storeId}${path}`, {
+  async api(path, body, method = "POST", tries = 2) {
+    let r = await this.fetch(`${this.apiUrl}/stores/${this.storeId}${path}`, {
       method,
       headers: { "content-type": "application/json", authorization: `Bearer ${await this.token()}` },
       body: body ? JSON.stringify(body) : void 0
     });
+    if (r.status === 429 && tries > 0) {
+      // FGA's rate limit: wait a moment and ask once more (fail closed if it still says no)
+      await new Promise((ok) => setTimeout(ok, 300 * (3 - tries)));
+      return this.api(path, body, method, tries - 1);
+    }
     const text = await r.text();
     let j = {};
     try {
@@ -236,6 +245,37 @@ var Auth0Fga = class {
     if (this.modelId) body.authorization_model_id = this.modelId;
     const j = await this.api("/check", body);
     return j.allowed === true;
+  }
+
+  // One request for many checks (FGA's /batch-check, up to 50 per call). Checking every
+  // document one by one sent ~20 requests per question, and the Judge view's three badges
+  // at once hit FGA's rate limit (429) and Cloudflare's 50-subrequest cap. Fail closed:
+  // an answer that is missing or an error never counts as allowed.
+  async checkMany(user, relation, objects) {
+    const out = objects.map(() => ({ allowed: false, error: "no answer" }));
+    for (let i = 0; i < objects.length; i += 50) {
+      const part = objects.slice(i, i + 50);
+      const body = { checks: part.map((object, k) => ({ tuple_key: { user, relation, object }, correlation_id: `c${i + k}` })), consistency: "HIGHER_CONSISTENCY" };
+      if (this.modelId) body.authorization_model_id = this.modelId;
+      let j;
+      try {
+        j = await this.api("/batch-check", body);
+      } catch (e) {
+        if ([400, 404, 405, 501].includes(e.status)) return this.checkEach(user, relation, objects); // no batch-check on this server
+        for (let k = 0; k < part.length; k++) out[i + k] = { allowed: false, error: e.message };
+        continue;
+      }
+      const res = j.result || {};
+      part.forEach((_, k) => {
+        const a = res[`c${i + k}`];
+        if (!a) return;
+        out[i + k] = a.error ? { allowed: false, error: a.error.message || JSON.stringify(a.error) } : { allowed: a.allowed === true, error: null };
+      });
+    }
+    return out;
+  }
+  async checkEach(user, relation, objects) {
+    return Promise.all(objects.map((o) => this.check(user, relation, o).then((a) => ({ allowed: a === true, error: null }), (e) => ({ allowed: false, error: e.message }))));
   }
   async write(tuples) {
     for (const t2 of tuples) {
@@ -560,10 +600,23 @@ async function checkOne(fga, user, id) {
   }
 }
 __name(checkOne, "checkOne");
+// every document in one go when the FGA client can batch (one request instead of one per doc)
+async function checkAll(fga, user, docs) {
+  if (!fga.checkMany) return Promise.all(docs.map((d) => checkOne(fga, user, d.id)));
+  const t0 = Date.now();
+  let res;
+  try {
+    res = await fga.checkMany(user, "can_view", docs.map((d) => `document:${d.id}`));
+  } catch (e) {
+    res = docs.map(() => ({ allowed: false, error: e.message }));
+  }
+  const ms = Date.now() - t0;
+  return docs.map((d, i) => ({ doc: d.id, allowed: res[i]?.allowed === true, ms, error: res[i]?.allowed === true ? null : res[i]?.error || null }));
+}
 async function retrieveAllowed(fga, user, question, docs = loadDocs()) {
   const byId = Object.fromEntries(docs.map((d) => [d.id, d]));
   // 1. FGA checks EVERY document first (the same checks for every question), fail closed
-  const all = await Promise.all(docs.map((d) => checkOne(fga, user, d.id)));
+  const all = await checkAll(fga, user, docs);
   const verdict = Object.fromEntries(all.map((c) => [c.doc, c]));
   const readable = new Set(all.filter((c) => c.allowed).map((c) => c.doc));
   // 2. search all documents; a locked one only by its public title
