@@ -38,6 +38,10 @@ export class LocalFga {
     const rel = relation === "can_view" ? "viewer" : relation;
     return this._has(user, rel, object);
   }
+  // Many checks for one user at once; each answer is { allowed, error }.
+  async checkMany(user, relation, objects) {
+    return Promise.all(objects.map((o) => this.check(user, relation, o).then((a) => ({ allowed: a === true, error: null }), (e) => ({ allowed: false, error: e.message }))));
+  }
   async setup() {
     return { model: "built in", tuples: this.tuples.length };
   }
@@ -107,12 +111,17 @@ export class Auth0Fga {
     return this._token;
   }
 
-  async api(path, body, method = "POST") {
-    const r = await this.fetch(`${this.apiUrl}/stores/${this.storeId}${path}`, {
+  async api(path, body, method = "POST", tries = 3) {
+    let r = await this.fetch(`${this.apiUrl}/stores/${this.storeId}${path}`, {
       method,
       headers: { "content-type": "application/json", authorization: `Bearer ${await this.token()}` },
       body: body ? JSON.stringify(body) : undefined,
     });
+    if (r.status === 429 && tries > 0) {
+      // FGA's rate limit: wait a moment and ask once more (fail closed if it still says no)
+      await new Promise((ok) => setTimeout(ok, tries === 3 ? 400 : 1200));
+      return this.api(path, body, method, tries - 1);
+    }
     const text = await r.text();
     let j = {};
     try { j = text ? JSON.parse(text) : {}; } catch { j = { raw: text }; }
@@ -132,6 +141,55 @@ export class Auth0Fga {
     if (this.modelId) body.authorization_model_id = this.modelId;
     const j = await this.api("/check", body);
     return j.allowed === true;
+  }
+
+  // One request for many checks (FGA's /batch-check, up to 50 per call). Checking every
+  // document one by one sent ~20 requests per question, and the Judge view's three badges
+  // at once hit FGA's rate limit (429) and Cloudflare's 50-subrequest cap. Fail closed:
+  // an answer that is missing or an error never counts as allowed.
+  async checkMany(user, relation, objects) {
+    // Best: ONE list-objects call ("which documents can this user view?"). FGA's rate limit counts
+    // every check inside a batch, so a batch still hit 429 when a question and the Judge view came
+    // close together. Not in the list = not allowed. Any trouble: fall back to the batch.
+    const type = String(objects[0] || "").split(":")[0];
+    if (objects.length > 1 && objects.every((o) => o.startsWith(`${type}:`))) {
+      try {
+        const body = { user, relation, type, consistency: "HIGHER_CONSISTENCY" };
+        if (this.modelId) body.authorization_model_id = this.modelId;
+        const j = await this.api("/list-objects", body);
+        if (Array.isArray(j.objects)) {
+          const can = new Set(j.objects);
+          return objects.map((o) => ({ allowed: can.has(o), error: null }));
+        }
+      } catch {}
+    }
+    return this.batchCheck(user, relation, objects);
+  }
+  async batchCheck(user, relation, objects) {
+    const out = objects.map(() => ({ allowed: false, error: "no answer" }));
+    for (let i = 0; i < objects.length; i += 50) {
+      const part = objects.slice(i, i + 50);
+      const body = { checks: part.map((object, k) => ({ tuple_key: { user, relation, object }, correlation_id: `c${i + k}` })), consistency: "HIGHER_CONSISTENCY" };
+      if (this.modelId) body.authorization_model_id = this.modelId;
+      let j;
+      try {
+        j = await this.api("/batch-check", body);
+      } catch (e) {
+        if ([400, 404, 405, 501].includes(e.status)) return this.checkEach(user, relation, objects); // no batch-check on this server
+        for (let k = 0; k < part.length; k++) out[i + k] = { allowed: false, error: e.message };
+        continue;
+      }
+      const res = j.result || {};
+      part.forEach((_, k) => {
+        const a = res[`c${i + k}`];
+        if (!a) return;
+        out[i + k] = a.error ? { allowed: false, error: a.error.message || JSON.stringify(a.error) } : { allowed: a.allowed === true, error: null };
+      });
+    }
+    return out;
+  }
+  async checkEach(user, relation, objects) {
+    return Promise.all(objects.map((o) => this.check(user, relation, o).then((a) => ({ allowed: a === true, error: null }), (e) => ({ allowed: false, error: e.message }))));
   }
 
   async write(tuples) {

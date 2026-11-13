@@ -129,10 +129,24 @@ async function checkOne(fga, user, id) {
   }
 }
 
+// every document in one go when the FGA client can batch (one request instead of one per doc)
+async function checkAll(fga, user, docs) {
+  if (!fga.checkMany) return Promise.all(docs.map((d) => checkOne(fga, user, d.id)));
+  const t0 = Date.now();
+  let res;
+  try {
+    res = await fga.checkMany(user, "can_view", docs.map((d) => `document:${d.id}`));
+  } catch (e) {
+    res = docs.map(() => ({ allowed: false, error: e.message }));
+  }
+  const ms = Date.now() - t0;
+  return docs.map((d, i) => ({ doc: d.id, allowed: res[i]?.allowed === true, ms, error: res[i]?.allowed === true ? null : res[i]?.error || null }));
+}
+
 export async function retrieveAllowed(fga, user, question, docs = loadDocs()) {
   const byId = Object.fromEntries(docs.map((d) => [d.id, d]));
   // 1. ask FGA about EVERY document first (same checks for every question), in parallel
-  const all = await Promise.all(docs.map((d) => checkOne(fga, user, d.id)));
+  const all = await checkAll(fga, user, docs);
   const verdict = Object.fromEntries(all.map((c) => [c.doc, c]));
   const readable = new Set(all.filter((c) => c.allowed).map((c) => c.doc));
   // 2. search all documents; locked ones only by their public title
