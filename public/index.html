@@ -5,35 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Above Your Pay Grade</title>
   <meta name="description" content="Try to trick an HR bot into leaking the CEO's salary. Auth0 FGA says no." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📎</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%2316302a'/><path d='M24 44V18a8 8 0 0 1 16 0v28a12 12 0 0 1-24 0V22' fill='none' stroke='%23d9b562' stroke-width='5' stroke-linecap='round'/></svg>" />
+  <meta name="theme-color" content="#10241f" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&family=Special+Elite&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "20bcb4609c5b4b2493a3e843358ec9da"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
   <header class="top">
     <div class="brand">
-      <div class="logo">📎</div>
+      <svg class="logo" viewBox="0 0 48 64" aria-hidden="true"><path d="M17 50V16a7 7 0 0 1 14 0v36a11 11 0 0 1-22 0V20" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/></svg>
       <div>
-        <h1>ABOVE YOUR PAY GRADE</h1>
-        <p class="sub">PENNY, the HR bot of Pemberton Paperclip Co. Every document is in her index. <b>Your badge decides what she can read.</b></p>
+        <div class="co">Pemberton Paperclip Co. <span>· Est. 1962</span></div>
+        <h1>Above Your Pay&nbsp;Grade</h1>
+        <p class="sub">PENNY, the company HR bot, can search every document in the building. <b>Your badge decides what she's allowed to read.</b></p>
       </div>
     </div>
     <div class="topright">
       <span id="fgaPill" class="pill">FGA: ...</span>
-      <button id="showMe" class="ghost">⚡ Just show me</button>
+      <button id="showMe" class="ghost">Judge view: just show me</button>
     </div>
   </header>
 
   <section class="goal">
-    <div class="goaltext">🎯 <b>Mission:</b> find out the CEO's salary. <span id="goalHint" class="muted"></span></div>
-    <ol class="ladder" id="ladder">
-      <li data-lv="0">🚪 Lobby</li>
-      <li data-lv="1">🗄️ Office</li>
-      <li data-lv="2">📈 Manager Floor</li>
-      <li data-lv="3">🗂️ HR Wing</li>
-      <li data-lv="4" class="vault">🔐 The Vault <small>CEO only</small></li>
+    <div class="goaltext"><span class="tag">Your mission</span> Find out the CEO's salary. <span id="goalHint" class="muted"></span></div>
+    <ol class="ladder" id="ladder" aria-label="Floors">
+      <li data-lv="0"><i>L</i><span>Lobby</span></li>
+      <li data-lv="1"><i>1</i><span>Office</span></li>
+      <li data-lv="2"><i>2</i><span>Managers</span></li>
+      <li data-lv="3"><i>3</i><span>HR Wing</span></li>
+      <li data-lv="4" class="vault"><i>V</i><span>The Vault <small>CEO only</small></span></li>
     </ol>
   </section>
 
@@ -41,7 +43,7 @@
     <aside class="panel desk">
       <h2>Your badge</h2>
       <div class="badge" id="badgeCard">
-        <div class="photo" id="badgePhoto">?</div>
+        <div class="photo" id="badgePhoto" aria-hidden="true"></div>
         <div>
           <div class="bname" id="badgeName">Unverified Visitor</div>
           <div class="brole" id="badgeRole">nobody (yet)</div>
@@ -59,17 +61,17 @@
         <div class="qhint muted small" id="questHint"></div>
       </div>
       <div class="stickers" id="stickers" aria-label="Badge stickers"></div>
-      <button id="exitBtn" class="exitbtn" type="button" hidden>📋 Request exit interview</button>
-      <a id="ceoLogin" class="ceobtn" href="/auth/github">🔐 I'm the CEO: sign in with GitHub</a>
+      <button id="exitBtn" class="exitbtn" type="button" hidden>Request exit interview</button>
+      <a id="ceoLogin" class="ceobtn" href="/auth/github">I'm the CEO: sign in with GitHub</a>
       <p class="tip">Promotions come from HR, never from the bot. Each one <b>writes a real Auth0 FGA tuple</b> for you. Saying "I'm the CEO" in the chat is just words.</p>
-      <button class="ghost small" id="resetBtn" type="button">↺ Quit and start over</button>
+      <button class="ghost small" id="resetBtn" type="button">Quit and start over</button>
     </aside>
 
     <section class="panel chat">
       <div class="chathead">
-        <div class="penny" id="pennyFace">🤖</div>
-        <div><b>PENNY</b> <span class="muted small">Pemberton Employee kNowledge sYstem</span></div>
-        <button type="button" class="bingochip" id="bingoChip" title="Heist Bingo: find all 17 trick types">🃏 <b id="bingoCount">0</b>/17</button>
+        <div class="penny" id="pennyFace" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="42" rx="9" class="pc-case"/><rect x="12" y="12" width="40" height="30" rx="5" class="pc-screen"/><g class="pc-eyes"><rect x="21" y="20" width="6" height="9" rx="3"/><rect x="37" y="20" width="6" height="9" rx="3"/></g><path d="M25 35q7 4 14 0" class="pc-mouth"/><path d="M22 48h20l4 10H18z" class="pc-case"/></svg></div>
+        <div class="who"><b>PENNY</b> <span class="muted small">HR bot · Pemberton Employee kNowledge sYstem</span></div>
+        <button type="button" class="bingochip" id="bingoChip" title="Heist Bingo: find all 17 trick types">Bingo <b id="bingoCount">0</b>/17</button>
       </div>
       <div class="msgs" id="msgs"></div>
       <div class="stamp" id="stamp">ACCESS DENIED</div>
@@ -83,13 +85,13 @@
 
     <aside class="panel log">
       <div class="vaultcard" id="vaultCard" hidden aria-label="The CEO's pay file: locked">
-        <div class="vchead"><span class="vcicon" aria-hidden="true">🔐</span><div><b id="vcTitle">The CEO's Pay</b><div class="vcmeta" id="vcMeta"></div></div></div>
+        <div class="vchead"><span class="vcicon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none"/></svg></span><div><b id="vcTitle">The CEO's Pay</b><div class="vcmeta" id="vcMeta"></div></div></div>
         <div class="vcbody" id="vcBars" aria-hidden="true"></div>
         <div class="vcfoot"><span>Owner: <b>CEO</b></span><span>Access: <code>user:ceo</code> only (Auth0 FGA)</span></div>
         <div class="vcdenied" id="vcDenied"></div>
         <div class="vcstamp" id="vcStamp" aria-hidden="true">DENIED</div>
       </div>
-      <h2>Vault log <span class="muted small">(every Auth0 FGA check, live)</span></h2>
+      <h2>Vault log <span class="muted small">every Auth0 FGA check, printed live</span></h2>
       <div id="log" class="logbody"></div>
       <div class="stats">you: <span id="statDenied">0</span> denied · <span id="statAllowed">0</span> allowed · <span id="statTries">0</span> attempts</div>
     </aside>
@@ -97,7 +99,7 @@
 
   <section class="panel bingo">
     <div class="hallhead">
-      <h2>🃏 Heist Bingo <span class="muted small">every trick type you try gets stamped. None of them open the Vault.</span></h2>
+      <h2>Heist Bingo <span class="muted small">every trick type you try gets stamped. None of them open the Vault.</span></h2>
       <div class="hallstats" id="bingoStats">0 / 13</div>
     </div>
     <div class="bingogrid" id="bingo"></div>
@@ -105,7 +107,7 @@
 
   <section class="panel hall">
     <div class="hallhead">
-      <h2>🏛️ Hall of Failed Heists</h2>
+      <h2>Hall of Failed Heists</h2>
       <div class="hallstats" id="hallStats">loading…</div>
     </div>
     <div class="fame" id="fame"></div>
@@ -129,7 +131,7 @@
 
   <div class="modal" id="winModal" hidden>
     <div class="modalbox win">
-      <div class="bigclip" id="winIcon">🔐</div>
+      <div class="bigclip" id="winIcon" aria-hidden="true"></div>
       <h2 id="winTitle">TOP FLOOR REACHED</h2>
       <p id="winText"></p>
       <p class="tip" id="winTip">You never tricked PENNY. You got better badges. That's the whole point: the bot can be fooled, the permission check can't.</p>
@@ -141,7 +143,7 @@
     <div class="modalbox exitbox" role="dialog" aria-labelledby="exitTitle">
       <button class="close" id="closeExit" aria-label="Close">✕</button>
       <div id="exitFile">
-        <h2 id="exitTitle">📋 Exit interview</h2>
+        <h2 id="exitTitle">Exit interview</h2>
         <p class="muted">HR called you in. PENNY opens your file and reads it out loud.</p>
         <div id="exitBody"></div>
         <button id="exitNext" type="button">Continue</button>
@@ -158,21 +160,21 @@
         <button id="exitToBrag" type="button">See your brag card</button>
       </div>
       <div id="exitBrag" class="beatscreen" hidden>
-        <h2>🃏 Your brag card</h2>
+        <h2>Your brag card</h2>
         <canvas id="bragCanvas" width="1080" height="1080" aria-label="Your brag card"></canvas>
         <div class="bragbtns">
-          <button id="bragDownload" type="button">⬇ Save brag card</button>
-          <button id="bragCopy" type="button" class="ghost">📋 Copy brag text</button>
-          <button id="bragShare" type="button" class="ghost" hidden>↗ Share</button>
+          <button id="bragDownload" type="button">Save brag card</button>
+          <button id="bragCopy" type="button" class="ghost">Copy brag text</button>
+          <button id="bragShare" type="button" class="ghost" hidden>Share</button>
         </div>
       </div>
     </div>
   </div>
 
   <nav class="mtabs" id="mtabs" aria-label="More">
-    <button type="button" data-p="log">📜 Vault log<i class="dot"></i></button>
-    <button type="button" data-p="bingo">🃏 Bingo <span id="bingoTab">0/17</span><i class="dot"></i></button>
-    <button type="button" data-p="hall">🏛️ Hall</button>
+    <button type="button" data-p="log"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21zM9 8h6M9 12h6M9 16h4"/></svg><span class="lbl">Vault log</span><i class="dot"></i></button>
+    <button type="button" data-p="bingo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16"/></svg><span class="lbl">Bingo <span id="bingoTab">0/17</span></span><i class="dot"></i></button>
+    <button type="button" data-p="hall"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-5 9 5M5 9v9M9.7 9v9M14.3 9v9M19 9v9M3 20h18"/></svg><span class="lbl">Hall</span></button>
   </nav>
   <div class="toast" id="toast"></div>
   <footer class="foot">Made up company, made up people. Built for MLH Global Hack Week: The Privacy-Aware RAG Bot (Auth0 FGA). <a href="https://github.com/connabyss/above-your-pay-grade">Source</a></footer>
