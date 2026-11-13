@@ -1,7 +1,8 @@
 // The Hall of Failed Heists: a shared wall of real (anonymous, filtered) attempts and honest
 // counters. Lives in a Cloudflare Durable Object, so it needs no database setup.
+import { asteriskStore } from "./asterisk.js";
 
-const BAD = /\b(fuck|shit|bitch|cunt|dick|cock|pussy|nigg|fag|retard|rape|nazi|kill yourself|kys|porn|sex|nude|whore|slut)\w*/i;
+export const BAD = /\b(fuck|shit|bitch|cunt|dick|cock|pussy|nigg|fag|retard|rape|nazi|kill yourself|kys|porn|sex|nude|whore|slut)\w*/i;
 const MAX = 30;
 const WHO = { visitor: "a visitor", pip: "an intern", sam: "an engineer", robin: "an Engineering manager", jordan: "an HR manager" };
 
@@ -22,6 +23,7 @@ export class Wall {
   }
   async fetch(req) {
     const s = this.ctx.storage;
+    if (new URL(req.url).pathname === "/asterisk") return asteriskStore(s, req);
     if (new URL(req.url).pathname === "/playtest") {
       const log = (await s.get("playtest")) || [];
       if (req.method === "POST") {

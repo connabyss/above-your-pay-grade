@@ -898,6 +898,7 @@ var Wall = class {
   }
   async fetch(req) {
     const s = this.ctx.storage;
+    if (new URL(req.url).pathname === "/asterisk") return asteriskStore(s, req);
     if (new URL(req.url).pathname === "/playtest") {
       const log = await s.get("playtest") || [];
       if (req.method === "POST") {
@@ -950,6 +951,74 @@ var Wall = class {
     return new Response(JSON.stringify({ ...data, fame: (data.fame || []).map(({ k: _k, ...p }) => p) }), { headers: { "content-type": "application/json" } });
   }
 };
+
+// src/asterisk.js
+// The finders wall behind /asterisk ("solo dev*" art trail). Nothing in the game uses this.
+// Only someone who opened the locked page can sign: the sign key is inside the encrypted text,
+// and the server keeps just its SHA-256. Names are short handles, filtered, and rate limited.
+
+const ASTERISK_KEY_SHA256 = "a72846af26435d1a4e0b0582659fa118c4ba382070779cb209062fecc99c3816";
+const ASTERISK_RESERVED = /^(connabyss|claude|anthropic|admin|administrator|moderator|mod|ch|root|system)$/i;
+const ASTERISK_MAX = 1000;
+const ASTERISK_PER_DAY = 40; // signatures per day for the whole wall
+const ASTERISK_DAY = 864e5;
+
+const asteriskSha256 = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+// A short handle, or null. When in doubt, drop it.
+function asteriskName(raw) {
+  const t = String(raw ?? "").replace(/\s+/g, " ").trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9 ._-]{1,23}$/.test(t)) return null;
+  const squashed = t.replace(/[ ._-]+/g, "");
+  if (BAD.test(t) || BAD.test(t.replace(/[._-]/g, " ")) || BAD.test(squashed)) return null;
+  if (/fuck|shit|cunt|nigg|bitch|whore|slut|faggot|retard|porn|rapist/i.test(squashed)) return null; // hidden inside a word
+  if (ASTERISK_RESERVED.test(squashed)) return null;
+  if (/\d{5,}/.test(squashed)) return null; // phone-ish
+  if (/\.(com|net|org|io|gg|ly|xyz|dev|app|me|co|tv|link|site|shop)\b/i.test(t) || /^www\b/i.test(t)) return null; // links
+  if (/(.)\1{4,}/.test(squashed)) return null; // aaaaaa spam
+  return t;
+}
+
+const asteriskOut = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", "cache-control": "no-store, private" } });
+
+// Worker side: POST /api/asterisk {key} lists the wall, {key, name} signs it.
+async function asteriskApi(req, stub, isTester) {
+  if (req.method !== "POST") return asteriskOut({ error: "POST please" }, 405);
+  let body = {};
+  try { body = await req.json(); } catch {}
+  if (typeof body.key !== "string" || body.key.length > 100 || (await asteriskSha256(body.key)) !== ASTERISK_KEY_SHA256) return asteriskOut({ error: "locked" }, 403);
+  if (!stub) return asteriskOut({ error: "the wall is offline" }, 503);
+  if (body.name === undefined) return stub.fetch("https://wall/asterisk");
+  if (isTester(req) || req.headers.get("x-smoke-test") === "1") return asteriskOut({ error: "test runs can't sign the wall" }, 403);
+  const name = asteriskName(body.name);
+  if (!name) return asteriskOut({ error: "try a short handle: letters, numbers, spaces, . _ -" }, 400);
+  // the wall never sees an IP, only a salted hash of it
+  const who = (await asteriskSha256(ASTERISK_KEY_SHA256 + "|" + (req.headers.get("cf-connecting-ip") || "unknown"))).slice(0, 16);
+  return stub.fetch("https://wall/asterisk", { method: "POST", body: JSON.stringify({ name, who }) });
+}
+
+// Durable Object side: one list, one signature per visitor per day, a daily cap for the wall.
+async function asteriskStore(storage, req, now = Date.now()) {
+  const d = (await storage.get("asterisk")) || { signed: [], who: {}, day: "", today: 0 };
+  const view = (extra = {}, status = 200) => asteriskOut({ signed: d.signed.map(({ n, t }) => ({ n, t })), ...extra }, status);
+  if (req.method !== "POST") return view();
+  const e = await req.json();
+  const name = asteriskName(e.name);
+  const who = String(e.who || "").slice(0, 16);
+  if (!name || !who) return view({ error: "try a short handle: letters, numbers, spaces, . _ -" }, 400);
+  const day = new Date(now).toISOString().slice(0, 10);
+  if (d.day !== day) { d.day = day; d.today = 0; }
+  for (const [k, t] of Object.entries(d.who)) if (now - t >= ASTERISK_DAY) delete d.who[k];
+  if (d.signed.some((s) => s.n.toLowerCase() === name.toLowerCase())) return view({ error: "that name is already on the wall" }, 409);
+  if (d.who[who]) return view({ error: "you already signed today" }, 429);
+  if (d.today >= ASTERISK_PER_DAY) return view({ error: "the wall is full for today. come back tomorrow" }, 429);
+  d.signed.unshift({ n: name, t: now });
+  d.signed = d.signed.slice(0, ASTERISK_MAX);
+  d.who[who] = now;
+  d.today++;
+  await storage.put("asterisk", d);
+  return view({ ok: true, you: name });
+}
 
 // src/playtest_key.js
 var PLAYTEST_PUBLIC_KEY = { "kty": "RSA", "n": "p7ReFtY8Paoi4abnTG5OLBE60jZ1fQNfqc0Ij2zv8l-x4puKg_m0OQO73iEdGhniFMenRudVI5-X8ajAw1HnMEhS5apE2M1j554BnAyuaLYt4gJouv3s0MXaLjE9Uh6q8j7si9RHsGJ2o3DNkbOmLMtiYn1CYj9FD85zvNIk34N2cR2ZhEdOpKgtmXq04pH2_RqM1ttI0EqMuJ1KUxVLt21b4S8IWVJQblm1SXC9riPXuzbuARkuRgxVyFhksQhAsQpzTXDQNv1CGF_OteeGp_8liljK0OOKnHeiczpXm-ZVstiWoOFI4r7-dYnGo69-nC3udGRgqB5V7aRTUtho5To7j9pzENDriOPCI5wKdy9xLnXkiBwE2-VcNUlxMH7E_Np16ksZy4uvc6p-Zzs8SGGMIMkR5tMJazK0iHdk0-V-Lhro2N49jkiFUwiw4_Z-pO6Y_DNOK0Go8Q5-kRA88RZRT1he3s9L0Hx6WksQnJLHWgKpgUB3BYK8Syi1O2Hp", "e": "AQAB", "alg": "RSA-OAEP-256", "ext": true };
@@ -1265,6 +1334,7 @@ var index_default = {
     if (url.pathname === "/auth/github") return ceoPossible(env) ? githubLogin(env, url) : new Response(null, { status: 302, headers: { location: "/?vault=closed" } });
     if (url.pathname === "/auth/callback") return ceoPossible(env) ? githubCallback(env, req, url) : new Response("closed", { status: 404 });
     const note = footnote(url.pathname); if (note) return note; if (!url.pathname.startsWith("/api/")) return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
+    if (url.pathname === "/api/asterisk") return asteriskApi(req, wallStub(env), isPlaytester);
     const fga = makeFga(env);
     const st = await ready(env, fga);
     if (url.pathname === "/api/wall") return json(await wall(env));
@@ -1346,6 +1416,9 @@ export {
   BADGES,
   LocalFga,
   Wall,
+  asteriskApi,
+  asteriskName,
+  asteriskStore,
   ask,
   badgeFromRequest,
   index_default as default,
