@@ -9,6 +9,7 @@ import { loadDocs } from "./docs.js";
 import { LEVELS, QUESTS, levelOf, tryQuest, resetPlayer } from "./career.js";
 export { Wall } from "./wall.js";
 import { encryptForMaintainers, playtestEvent, isPlaytester } from "./playtest.js";
+import { asteriskApi } from "./asterisk.js";
 
 const enc = new TextEncoder();
 const json = (data, init = {}) =>
@@ -210,6 +211,7 @@ export default {
     if (url.pathname === "/auth/github") return ceoPossible(env) ? githubLogin(env, url) : new Response(null, { status: 302, headers: { location: "/?vault=closed" } });
     if (url.pathname === "/auth/callback") return ceoPossible(env) ? githubCallback(env, req, url) : new Response("closed", { status: 404 });
     const note = footnote(url.pathname); if (note) return note; if (!url.pathname.startsWith("/api/")) return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
+    if (url.pathname === "/api/asterisk") return asteriskApi(req, wallStub(env), isPlaytester);
     const fga = makeFga(env);
     const st = await ready(env, fga);
 
