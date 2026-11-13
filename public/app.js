@@ -600,3 +600,6 @@ function vaultDenied() {
   const c = $("vaultCard"); c.classList.remove("thump"); void c.offsetWidth; c.classList.add("thump");
 }
 loadVaultCard();
+
+// Art trail ("solo dev*", starts at github.com/connabyss). Not part of the game.
+console.log("%c*5 you opened devtools. he never does.\n   word 5 of 12: i\n   next: exiftool https://raw.githubusercontent.com/connabyss/connabyss/main/assets/asterisk.png", "font: 13px/1.5 ui-monospace, monospace; color: #8b949e");
