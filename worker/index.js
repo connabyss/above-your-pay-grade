@@ -1264,7 +1264,7 @@ var index_default = {
     if (url.pathname === "/auth/logout") return new Response(null, { status: 302, headers: { location: "/?vault=signed-out", "set-cookie": "badge=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0" } });
     if (url.pathname === "/auth/github") return ceoPossible(env) ? githubLogin(env, url) : new Response(null, { status: 302, headers: { location: "/?vault=closed" } });
     if (url.pathname === "/auth/callback") return ceoPossible(env) ? githubCallback(env, req, url) : new Response("closed", { status: 404 });
-    if (!url.pathname.startsWith("/api/")) return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
+    const note = footnote(url.pathname); if (note) return note; if (!url.pathname.startsWith("/api/")) return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
     const fga = makeFga(env);
     const st = await ready(env, fga);
     if (url.pathname === "/api/wall") return json(await wall(env));
@@ -1359,4 +1359,12 @@ export {
   withSealedDocs,
   withSetup
 };
+// Art trail ("solo dev*", starts at github.com/connabyss): a teapot page and a real security.txt.
+// Nothing in the game uses these.
+function footnote(path) {
+  const text = { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=300" };
+  if (path === "/footnote") return new Response("*4 418 i'm a teapot. i'm not a solo dev either.\n   word 4 of 12: alone\n   next: open devtools on the front page. read the console.\n", { status: 418, headers: text });
+  if (path === "/.well-known/security.txt") return new Response("Contact: https://github.com/connabyss\nExpires: 2027-11-13T00:00:00.000Z\nPreferred-Languages: en\nCanonical: https://above-your-pay-grade.connabyss.workers.dev/.well-known/security.txt\n\n# *11 if you're reading security.txt, you're the person i was hoping for.\n#     word 11 of 12: of\n#     next: bite's CITATION.cff. citation needed.\n#           https://github.com/connabyss/bite/blob/main/CITATION.cff\n", { headers: text });
+  return null;
+}
 //# sourceMappingURL=index.js.map

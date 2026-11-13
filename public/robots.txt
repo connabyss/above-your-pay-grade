@@ -1,0 +1,5 @@
+# *3 this file asks robots to stay out. you are not a robot.
+#    word 3 of 12: worked
+#    next: the one path below. visit it anyway.
+User-agent: *
+Disallow: /footnote

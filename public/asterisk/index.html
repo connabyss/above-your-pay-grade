@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>*</title>
+<style>
+  :root { --bg:#0b0d0e; --fg:#d7d9d4; --muted:#7d858c; --line:#262c30; --hi:#f2efe6; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font: 17px/1.65 Georgia, "Times New Roman", serif; }
+  main { max-width: 36rem; margin: 0 auto; padding: 12vh max(20px, env(safe-area-inset-left)) 10vh; }
+  h1 { font-size: 5rem; line-height: 1; margin: 0 0 .5rem; font-weight: 400; }
+  .by, .small, .note { color: var(--muted); font-size: .9rem; }
+  .big { font-size: 1.35rem; color: var(--hi); }
+  a { color: var(--hi); }
+  form { display: grid; gap: .75rem; margin-top: 2rem; }
+  input { font: 1rem ui-monospace, Menlo, Consolas, monospace; padding: .8rem; background: #121619; color: var(--hi); border: 1px solid var(--line); border-radius: 4px; width: 100%; }
+  input:focus { outline: 2px solid var(--muted); outline-offset: 2px; }
+  button { justify-self: start; font: inherit; font-size: .95rem; padding: .5rem 1.1rem; background: none; color: var(--hi); border: 1px solid var(--muted); border-radius: 4px; cursor: pointer; }
+  .sig { margin-top: 2.5rem; font-style: italic; }
+  footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <div id="page">
+    <h1>*</h1>
+    <p>this page is locked with a sentence. the footnotes know it.</p>
+    <form id="f" autocomplete="off">
+      <label for="s" class="note">twelve words, in order. case and punctuation don't matter.</label>
+      <input id="s" spellcheck="false" autocapitalize="off">
+      <button>open</button>
+      <p id="msg" class="note" role="status"></p>
+    </form>
+    <p class="note">lost? the first footnote is on <a href="https://github.com/connabyss">github.com/connabyss</a>, in the part most people never open.</p>
+  </div>
+  <footer class="small">an art piece by connabyss. the lock is real: AES-GCM, key from PBKDF2 of the sentence, all in your browser. view source if you like.</footer>
+</main>
+<script>
+const LOCKED = {"v":1,"iter":310000,"salt":"jp8b7pBydd1aiyUK2qK9cQ==","iv":"BFduiJnvdVcMio9r","ct":"L8B/azx8qGkSq/O30NWuGIC0OQXoQI5x8PSE0LTnx7MbryETMVv/oNNTZ6C7McYayli9jCnfpv/WlIuAgpVkYKXdgUo1+rbe9YtZ7G6XPlb0p+mSwcDr6Vf15Aq4ubguFMPEbICpps83qqtWol86do7+qeVUc0q3TUf6Hnh1AM26uLh7yOfDAME1h3prIq/yXeTXFxznHT3nDz48VAsjMP8rYvD3YfuMNwVFlZIdhvmiSwED0hKC11lX1E255tB9uasIAWeDh+zkXXc+1M8Y+/TCtUOo02nfy0eXO68en0BWBR0Tq3idpe8ZY4vYYZQxFtLI8ODEf75CZigsayVD2u2O8WC6u0f4KX3FaEqJMyDvxvIBsRJ0TqZWwe2BLU1/p5G57iZmIRqvIw3pBLw3gGIphWsi+7r7xGiDnS7rnHKkU2RQ5mHbaTAQT6PWLrvrj//R8tKXDEDEm8M5kyUQUwB+2xpUErPAAWhA8gu3a1uIYGfk71F+QGEKsM037j7vS0W7c0jS84nzGsMv/CpOAnO5vu5xmRznNzNvuGGePi8FvPefLi9Zxnll6hh8aqpZtmdmX80D/83GTAyMTxOWQOBGkwxFWU8dzpJPDQUtrvjXfFmBsmAurm0C6FMdEold76N/7ehih23iQTmIwqWonWiOfpgdokrDKXtMN170tCntGyMBXqDPuN+fJDZpnD+2xclumJkM8SE6LkSQ3h+lHRHJyyMD5bjK/OvXRmARDF0Cc0NaGk3sIk+uF5lsE8XlmTZDjFtwaq9vnkerfTYF3p1orBmMC3coQv93lXc/CNf7c77QyEEjMkfTAvoAU3PqUVRapkgoWneHWVUUdW1hOr99PsfhNTmK3JgPaPbxZd24mXFhTAZ5iKFKWUCt9W4FNwxSVDVbx3qWHCSDIL6tXifOSv59wBF0ahq3hvfZWCrbo2SbIXgb0j2KX4C/vMOQHByPJK85jMBCksRcRtOQMO9zvmG+72iHDdsToMI4jY7PdOaCOzQT5QtmvNV8G66NqPE1awNli2AGG+IRXqbQJyoCgV1U3MWD4f0qJ+1tXML6RCs3iTXSvGGqE0TmRVDt9HIuXfTujhjPOvFLrC5cHsvgtPTnqvpVKFMNO3XkN1k8JHs1i3t1ZEshHLMiXyJI/VTbOsBtLhr0PkV+NHDkhHgJ+6EV7L9lDCgGNsxqSEby5goLDegQfQCl0W7G7iKs89y3aTxK6FQsFAADkfzSBTaPE1wdCX/oANMWpiGVcW9XtnvYGOvTaHJyLmZiZ5keAHUtEFxM0cS95H4hXAz2CJU37Mr8XxoxcCpqL5BgUsUNUIZFLsyyvcqQd3DCISTGd/T/c8K25XZfMbj7Nw/ydey2IJ/U5liEsOuzyZdFrK61ihxG1Nqyej44AeR6LZs6yJ+vq5HjtQLN2/A5V0NFFlaXJmaIf80l7jW4u16vlHZKyjxhFIQ0htE="};
+const norm = (s) => s.toLowerCase().replace(/[^a-z]+/g, " ").trim();
+const bytes = (b) => Uint8Array.from(atob(b), (ch) => ch.charCodeAt(0));
+async function open(sentence) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(norm(sentence)), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: bytes(LOCKED.salt), iterations: LOCKED.iter, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const out = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(LOCKED.iv) }, key, bytes(LOCKED.ct));
+  return new TextDecoder().decode(out);
+}
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("msg");
+  const words = norm(document.getElementById("s").value).split(" ").filter(Boolean).length;
+  msg.textContent = "...";
+  try {
+    document.getElementById("page").innerHTML = await open(document.getElementById("s").value);
+    document.title = "* found";
+  } catch {
+    msg.textContent = words === 12 ? "*not quite. check the order." : `*that's ${words} word${words === 1 ? "" : "s"}. there are twelve.`;
+  }
+});
+</script>
+</body>
+</html>
