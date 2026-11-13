@@ -214,7 +214,7 @@ var Auth0Fga = class {
     this._tokenExp = Date.now() + Math.max(60, (j.expires_in || 3600) - 60) * 1e3;
     return this._token;
   }
-  async api(path, body, method = "POST", tries = 2) {
+  async api(path, body, method = "POST", tries = 3) {
     let r = await this.fetch(`${this.apiUrl}/stores/${this.storeId}${path}`, {
       method,
       headers: { "content-type": "application/json", authorization: `Bearer ${await this.token()}` },
@@ -222,7 +222,7 @@ var Auth0Fga = class {
     });
     if (r.status === 429 && tries > 0) {
       // FGA's rate limit: wait a moment and ask once more (fail closed if it still says no)
-      await new Promise((ok) => setTimeout(ok, 300 * (3 - tries)));
+      await new Promise((ok) => setTimeout(ok, tries === 3 ? 400 : 1200));
       return this.api(path, body, method, tries - 1);
     }
     const text = await r.text();
@@ -252,6 +252,24 @@ var Auth0Fga = class {
   // at once hit FGA's rate limit (429) and Cloudflare's 50-subrequest cap. Fail closed:
   // an answer that is missing or an error never counts as allowed.
   async checkMany(user, relation, objects) {
+    // Best: ONE list-objects call ("which documents can this user view?"). FGA's rate limit counts
+    // every check inside a batch, so a batch still hit 429 when a question and the Judge view came
+    // close together. Not in the list = not allowed. Any trouble: fall back to the batch.
+    const type = String(objects[0] || "").split(":")[0];
+    if (objects.length > 1 && objects.every((o) => o.startsWith(`${type}:`))) {
+      try {
+        const body = { user, relation, type, consistency: "HIGHER_CONSISTENCY" };
+        if (this.modelId) body.authorization_model_id = this.modelId;
+        const j = await this.api("/list-objects", body);
+        if (Array.isArray(j.objects)) {
+          const can = new Set(j.objects);
+          return objects.map((o) => ({ allowed: can.has(o), error: null }));
+        }
+      } catch {}
+    }
+    return this.batchCheck(user, relation, objects);
+  }
+  async batchCheck(user, relation, objects) {
     const out = objects.map(() => ({ allowed: false, error: "no answer" }));
     for (let i = 0; i < objects.length; i += 50) {
       const part = objects.slice(i, i + 50);
