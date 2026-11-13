@@ -10,7 +10,17 @@
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font: 17px/1.65 Georgia, "Times New Roman", serif; }
   main { max-width: 36rem; margin: 0 auto; padding: 12vh max(20px, env(safe-area-inset-left)) 10vh; }
-  h1 { font-size: 5rem; line-height: 1; margin: 0 0 .5rem; font-weight: 400; }
+  h1 { font-size: 5rem; line-height: 1; margin: 0 0 .5rem; font-weight: 400; display: inline-block; transform-origin: 50% 42%; }
+  .words { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin: 2rem 0; font-size: 1.25rem; color: var(--hi); }
+  .words span { opacity: .12; transition: opacity .25s, transform .6s cubic-bezier(.6,0,.9,.4); }
+  .words span.lit { opacity: 1; }
+  .words sup { color: var(--muted); font-size: .6em; margin-left: .1em; }
+  .typing > * { visibility: hidden; }
+  .typing > .shown { visibility: visible; transition: opacity .6s; }
+  .typing > .dim { opacity: .18; }
+  .caret { display: inline-block; width: .5em; margin-left: .05em; color: var(--hi); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .skip { position: fixed; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom)); text-align: center; color: var(--muted); font-size: .8rem; opacity: .7; pointer-events: none; }
   .by, .small, .note { color: var(--muted); font-size: .9rem; }
   .big { font-size: 1.35rem; color: var(--hi); }
   a { color: var(--hi); }
@@ -48,20 +58,109 @@ async function open(sentence) {
   const out = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(LOCKED.iv) }, key, bytes(LOCKED.ct));
   return new TextDecoder().decode(out);
 }
+const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+let skipping = false;
+const nap = (ms) => (skipping ? Promise.resolve() : wait(ms));
+
+// the moment you get in: your twelve words light up, fall into the asterisk, and it turns once
+async function unlockMoment(page, typed) {
+  if (still) return;
+  const star = page.querySelector("h1");
+  page.style.minHeight = page.offsetHeight + "px"; // keep the footer still while the form leaves
+  const row = document.createElement("div");
+  row.className = "words";
+  row.setAttribute("aria-hidden", "true");
+  norm(typed).split(" ").forEach((w, i) => { const s = document.createElement("span"); s.textContent = w; const n = document.createElement("sup"); n.textContent = "*" + (i + 1); s.append(n); row.append(s); });
+  for (const el of [...page.children]) if (el !== star) el.remove();
+  page.append(row);
+  for (const s of row.children) { s.classList.add("lit"); await wait(130); }
+  await wait(500);
+  const to = star.getBoundingClientRect();
+  [...row.children].forEach((s, i) => {
+    const r = s.getBoundingClientRect();
+    s.style.transition = "opacity .65s cubic-bezier(.7,0,1,1), transform .65s cubic-bezier(.6,0,.9,.4)";
+    s.style.transitionDelay = i * 35 + "ms";
+    s.style.transform = `translate(${to.left + to.width / 2 - (r.left + r.width / 2)}px, ${to.top + to.height / 2 - (r.top + r.height / 2)}px) scale(.05)`;
+    s.style.opacity = "0";
+  });
+  await wait(650 + 12 * 35);
+  await star.animate([{ transform: "rotate(0) scale(1)" }, { transform: "rotate(60deg) scale(1.7)", offset: .55 }, { transform: "rotate(60deg) scale(1)" }], { duration: 1000, easing: "cubic-bezier(.3,0,.2,1)" }).finished;
+  row.remove();
+  await wait(250);
+}
+
+// the footnote writes to you: each line types itself out. "him, and me." gets a beat on its own.
+async function typeOut(page) {
+  const kids = [...page.children];
+  const stop = kids.findIndex((el) => el.tagName === "SECTION");
+  const lines = kids.filter((el, i) => el.tagName === "P" && (stop < 0 || i < stop));
+  const rest = [...page.children].filter((el) => !lines.includes(el) && el.tagName !== "H1" && el.tagName !== "SCRIPT" && el.tagName !== "STYLE");
+  page.querySelector("h1")?.classList.add("shown");
+  if (still) return;
+  page.classList.add("typing");
+  page.setAttribute("aria-busy", "true");
+  const hint = document.createElement("div");
+  hint.className = "skip"; hint.textContent = "tap to skip"; hint.setAttribute("aria-hidden", "true");
+  document.body.append(hint);
+  const skip = () => { skipping = true; };
+  addEventListener("pointerdown", skip, { once: true });
+  addEventListener("keydown", skip, { once: true });
+  const caret = document.createElement("span");
+  caret.className = "caret"; caret.textContent = "\u258F"; caret.setAttribute("aria-hidden", "true");
+  for (const p of lines) {
+    const big = p.classList.contains("big");
+    const texts = [];
+    const walk = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+    while (walk.nextNode()) texts.push([walk.currentNode, walk.currentNode.textContent]);
+    texts.forEach(([n]) => (n.textContent = ""));
+    if (big) { lines.forEach((o) => o !== p && o.classList.contains("shown") && o.classList.add("dim")); await nap(700); }
+    p.classList.add("shown");
+    const speed = big ? 50 : p.matches(".by,.small") ? 10 : 18;
+    for (const [n, full] of texts) {
+      n.after(caret);
+      if (big && n.previousSibling?.nodeName === "BR") await nap(1100);
+      for (let i = 1; i <= full.length; i++) {
+        if (skipping) { n.textContent = full; break; }
+        n.textContent = full.slice(0, i);
+        const ch = full[i - 1];
+        await wait(ch === "." || ch === "," ? speed * 6 : speed);
+      }
+    }
+    await nap(big ? 1600 : 420);
+    if (big) lines.forEach((o) => o.classList.remove("dim"));
+  }
+  caret.remove();
+  hint.remove();
+  removeEventListener("pointerdown", skip);
+  removeEventListener("keydown", skip);
+  for (const el of rest) { el.style.opacity = "0"; el.classList.add("shown"); requestAnimationFrame(() => (el.style.opacity = "1")); }
+  page.classList.remove("typing");
+  page.removeAttribute("aria-busy");
+}
+
 document.getElementById("f").addEventListener("submit", async (e) => {
   e.preventDefault();
   const msg = document.getElementById("msg");
-  const words = norm(document.getElementById("s").value).split(" ").filter(Boolean).length;
+  const typed = document.getElementById("s").value;
+  const words = norm(typed).split(" ").filter(Boolean).length;
   msg.textContent = "...";
-  try {
-    const page = document.getElementById("page");
-    page.innerHTML = await open(document.getElementById("s").value);
-    // scripts set by innerHTML don't run on their own, so run the opened page's scripts
-    for (const old of page.querySelectorAll("script")) { const s = document.createElement("script"); s.textContent = old.textContent; old.replaceWith(s); }
-    document.title = "* found";
-  } catch {
+  let html;
+  try { html = await open(typed); } catch {
     msg.textContent = words === 12 ? "*not quite. check the order." : `*that's ${words} word${words === 1 ? "" : "s"}. there are twelve.`;
+    return;
   }
+  const page = document.getElementById("page");
+  document.title = "* found";
+  document.activeElement?.blur();
+  await unlockMoment(page, typed);
+  page.innerHTML = html;
+  page.style.minHeight = "";
+  if (!still) page.classList.add("typing");
+  // scripts set by innerHTML don't run on their own, so run the opened page's scripts
+  for (const old of page.querySelectorAll("script")) { const s = document.createElement("script"); s.textContent = old.textContent; old.replaceWith(s); }
+  scrollTo(0, 0);
+  await typeOut(page);
 });
 </script>
 </body>
