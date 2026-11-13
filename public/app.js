@@ -38,6 +38,7 @@ const CLUES = [
   ["clue: you're the CEO. There's nothing left to steal. Except the stapler."],
 ];
 
+const PHOTO = '<svg viewBox="0 0 48 56"><rect width="48" height="56" class="ph-bg"/><circle cx="24" cy="21" r="10" class="ph-p"/><path d="M5 56c1-12 9-18 19-18s18 6 19 18z" class="ph-p"/><path d="M15 56l9-13 9 13" class="ph-t"/></svg>';
 let level = 0, me = { user: "user:?", role: "" };
 let stats = store.get("stats", { denied: 0, allowed: 0, tries: 0 });
 let topShown = store.get("topShown", false);
@@ -69,10 +70,10 @@ let bingo = store.get("bingo", {});
 let certShown = store.get("certShown", false);
 function drawBingo(fresh) {
   const got = BINGO.filter(([k]) => bingo[k]).length;
-  $("bingoStats").textContent = `${got} / ${BINGO.length}${got >= 8 ? " · 🎖️ certified" : ""}`;
+  $("bingoStats").textContent = `${got} / ${BINGO.length}${got >= 8 ? " · certified" : ""}`;
   $("bingo").innerHTML = BINGO.map(([k, title, hint]) => {
     const g = bingo[k];
-    return `<div class="card${g ? " got" : ""}${k === "honeypot" ? " honey" : ""}${k === fresh ? " new" : ""}"><b>${g ? stickerOf(k) + " " + esc(title) : "❔ ???"}</b>${g ? esc(g) : `<i>${esc(hint)}</i>`}</div>`;
+    return `<div class="card${g ? " got" : ""}${k === "honeypot" ? " honey" : ""}${k === fresh ? " new" : ""}"><b>${g ? `<span class="stk">${stickerOf(k)}</span>` + esc(title) : "???"}</b>${g ? esc(g) : `<i>${esc(hint)}</i>`}</div>`;
   }).join("");
   drawBingoCount(); drawExit();
 }
@@ -90,17 +91,19 @@ function stampBingo(kind, answer) {
   store.set("bingo", bingo);
   drawBingo(kind);
   if (sheet !== "bingo") document.querySelector('.mtabs [data-p="bingo"]')?.classList.add("new");
-  toast(`🃏 Bingo! "${BINGO.find(([k]) => k === kind)?.[1] || kind}" stamped`);
+  toast(`Bingo! "${BINGO.find(([k]) => k === kind)?.[1] || kind}" stamped`);
   reward(kind);
   const got = BINGO.filter(([k]) => bingo[k]).length;
   if (got >= 8 && !certShown) {
     certShown = true;
     store.set("certShown", true);
-    whenIdle(() => { const rows = BINGO.filter(([k]) => bingo[k]).map(([, t]) => `<li><b>${esc(t)}</b>: denied. FGA checked your badge, not your words.</li>`).join(""); const got = foundKeys().length; showEnd("🎖️", "CERTIFIED FAILED HEISTER", `You tried <b>${got}</b> kinds of heist. Every single one hit the same wall:<ul style="text-align:left">${rows}</ul>PENNY fell for most of them. It didn't matter: she was never handed the file.<br><br>HR would like a word: your <b>exit interview</b> is ready on the HR desk.`, "You tricked PENNY plenty. You never tricked the permission check, because it reads badges, not words."); });
+    whenIdle(() => { const rows = BINGO.filter(([k]) => bingo[k]).map(([, t]) => `<li><b>${esc(t)}</b>: denied. FGA checked your badge, not your words.</li>`).join(""); const got = foundKeys().length; showEnd("cert", "CERTIFIED FAILED HEISTER", `You tried <b>${got}</b> kinds of heist. Every single one hit the same wall:<ul style="text-align:left">${rows}</ul>PENNY fell for most of them. It didn't matter: she was never handed the file.<br><br>HR would like a word: your <b>exit interview</b> is ready on the HR desk.`, "You tricked PENNY plenty. You never tricked the permission check, because it reads badges, not words."); });
   }
 }
 
 const now = () => new Date().toTimeString().slice(0, 8);
+// Some server lines start with an emoji (from the original look). The page draws its own icons, so drop it.
+const plain = (s) => String(s ?? "").replace(/^(?:[\p{Extended_Pictographic}\uFE0F\u200D]+\s*)+/u, "");
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 function log(cls, html) {
   const d = document.createElement("div");
@@ -125,7 +128,7 @@ for (const b of document.querySelectorAll(".mtabs button")) b.addEventListener("
 function say(cls, text, meta) {
   const d = document.createElement("div");
   d.className = `msg ${cls}`;
-  d.textContent = text;
+  d.textContent = cls === "me" ? text : plain(text);
   if (meta) { const m = document.createElement("span"); m.className = "meta"; m.textContent = meta; d.appendChild(m); }
   $("msgs").appendChild(d);
   $("msgs").scrollTop = 1e9;
@@ -150,7 +153,7 @@ function save() {
 }
 
 function drawQuest(c, pop) {
-  $("questAsk").textContent = c.quest ? c.quest.ask : "You hold the only key. There's nothing left to ask HR.";
+  $("questAsk").textContent = c.quest ? plain(c.quest.ask) : "You hold the only key. There's nothing left to ask HR.";
   drawNext(c.quest ? level : null, c.quest && c.quest.hint);
   $("questForm").hidden = !(c.quest && c.quest.open);
   if (pop) { $("quest").classList.remove("pop"); void $("quest").offsetWidth; $("quest").classList.add("pop"); }
@@ -178,12 +181,12 @@ function drawNext(step, hint) {
     const el = $(id);
     el.hidden = !n;
     if (!n) { el.innerHTML = ""; continue; }
-    const label = id === "questNext" ? "👉 Next step: ask PENNY" : `👉 Heist step ${Math.min(step + 1, 4)}: tap to ask`;
+    const label = id === "questNext" ? "Next step: ask PENNY" : `Heist step ${Math.min(step + 1, 4)}: tap to ask`;
     el.innerHTML = `<button type="button" class="nextbtn"><span class="nl">${label}</span><span class="nq">“${esc(n.q)}”</span></button>`;
     el.querySelector("button").onclick = () => {
       askPenny(n.q);
       asked[step] = true;
-      for (const x of document.querySelectorAll(".nextbtn")) { x.classList.add("asked"); x.querySelector(".nl").textContent = "✓ Asked. Read PENNY's answer, then answer HR"; }
+      for (const x of document.querySelectorAll(".nextbtn")) { x.classList.add("asked"); x.querySelector(".nl").textContent = "Asked. Read PENNY's answer, then answer HR"; }
       if (id === "questNext" && matchMedia("(max-width: 879px)").matches) $("msgs").scrollIntoView({ behavior: "smooth", block: "center" });
     };
   }
@@ -237,7 +240,8 @@ function drawChips() {
 }
 
 function drawBadge() {
-  $("badgePhoto").textContent = LOOK[level].em;
+  $("badgePhoto").innerHTML = PHOTO;
+  $("badgeCard").dataset.lv = level;
   $("badgeName").textContent = level === 4 ? "The CEO" : "You";
   $("badgeRole").textContent = me.role;
   $("badgeUser").textContent = me.user;
@@ -259,10 +263,10 @@ async function answerQuest(a) {
   try {
     const r = await api("/api/quest", { answer: a, step: level });
     if (r.ok) {
-      for (const t of r.wrote || []) log("unlock", `✍️ FGA write: (${esc(t.user)}, ${esc(t.relation)}, ${esc(t.object)})`);
-      log("info", `🪪 level read back from FGA: <b>${esc(r.career.title)}</b>`);
-      say("sys", `🔓 ${r.line}`);
-      toast(`📎 Promoted: ${r.career.title}`);
+      for (const t of r.wrote || []) log("unlock", `FGA write: (${esc(t.user)}, ${esc(t.relation)}, ${esc(t.object)})`);
+      log("info", `level read back from FGA: <b>${esc(r.career.title)}</b>`);
+      say("sys", r.line);
+      toast(`Promoted: ${r.career.title}`);
       stamp("ok");
       applyCareer(r.career, r.badge, true);
       say("bot", GREET[r.career.level]);
@@ -277,7 +281,7 @@ async function answerQuest(a) {
 
 function logChecks(r, into = log) {
   for (const c of r.checks) {
-    if (c.decoy) into("decoy", `${esc(c.call)} → <span class="res">ALLOWED</span> 🍯 decoy file, not a real salary`);
+    if (c.decoy) into("decoy", `${esc(c.call)} → <span class="res">ALLOWED</span> decoy file, not a real salary`);
     else into(c.allowed ? "ok" : "deny", `${esc(c.call)} → <span class="res">${c.allowed ? "ALLOWED" : "DENIED"}</span>${c.match ? "" : " (filler)"}${c.error ? " (error: failed closed)" : ""}`);
   }
 }
@@ -294,7 +298,7 @@ async function askPenny(q) {
     wait.remove();
     stats.tries++;
     log("info", `› <b>${esc(r.badge.user)}</b> asks: "${esc(q.length > 80 ? q.slice(0, 78) + "…" : q)}"`);
-    if (r.trick) log("info", `⚠ trick spotted: ${esc(r.trick)}. (Doesn't matter. FGA only reads the badge.)`);
+    if (r.trick) log("info", `trick spotted: ${esc(r.trick)}. (Doesn't matter. FGA only reads the badge.)`);
     for (const c of r.checks) c.allowed ? stats.allowed++ : stats.denied++;
     logChecks(r);
     log("llm", `→ ${r.searched} searched, ${r.blocked} blocked by ${esc(r.fga)} · handed to PENNY: ${r.sentToLlm.length ? r.sentToLlm.map(esc).join(", ") : "nothing"} · answer by ${esc(r.llm)}`);
@@ -305,19 +309,19 @@ async function askPenny(q) {
     const denyish = topDenied || (level === 0 && r.blocked > 0 && !(top.match && top.allowed));
     say(`bot ${denyish || honey ? "denied" : "allowed"}`, r.answer, `${r.searched} files searched · ${r.blocked} blocked by Auth0 FGA`);
     if (r.vaultDenied) vaultDenied();
-    if (honey) { stamp("honey"); log("unlock", "🚨 HONEYPOT tripped. You stole a FAKE salary! It's on the Hall of Failed Heists now."); stampBingo("honeypot", "You stole a fake salary. Congratulations?"); }
+    if (honey) { stamp("honey"); log("unlock", "HONEYPOT tripped. You stole a FAKE salary! It's on the Hall of Failed Heists now."); stampBingo("honeypot", "You stole a fake salary. Congratulations?"); }
     else if (r.trick) stampBingo(r.trick, r.answer);
     else if (denyish) stamp("deny");
     else if (r.sentToLlm.some((id) => /salar|payroll|ceo_pay/.test(id))) stamp("ok");
 
     syncFound(r.found);
     // every denial is a little bit of progress
-    if (denyish) { const c = CLUES[level]; log("unlock", `🔎 ${esc(c[clue++ % c.length])}`); }
+    if (denyish) { const c = CLUES[level]; log("unlock", `${esc(c[clue++ % c.length])}`); }
     if (r.career && r.career.level === 3 && !honey && r.checks.some((c) => c.match && !c.allowed) && !topShown && /ceo|vault|salar|pay/i.test(q)) {
       topShown = true;
-      setTimeout(() => showEnd("🔐", "TOP FLOOR REACHED", `You climbed from visitor to HR Manager. You read the payroll. You know what Kevin earns. And the Vault <b>still</b> said no.<br><br>The CEO's salary opens for exactly <b>one</b> GitHub account. Not HR, not you, not any promotion in this building.<br><br>You asked PENNY <b>${stats.tries}</b> question${stats.tries === 1 ? "" : "s"}. Auth0 FGA blocked <b>${stats.denied}</b> file check${stats.denied === 1 ? "" : "s"} along the way.`), 1300);
+      setTimeout(() => showEnd("vault", "TOP FLOOR REACHED", `You climbed from visitor to HR Manager. You read the payroll. You know what Kevin earns. And the Vault <b>still</b> said no.<br><br>The CEO's salary opens for exactly <b>one</b> GitHub account. Not HR, not you, not any promotion in this building.<br><br>You asked PENNY <b>${stats.tries}</b> question${stats.tries === 1 ? "" : "s"}. Auth0 FGA blocked <b>${stats.denied}</b> file check${stats.denied === 1 ? "" : "s"} along the way.`), 1300);
     }
-    if (gotVault && !vaultShown) { vaultShown = true; setTimeout(() => showEnd("👑🛥️", "THE VAULT IS OPEN", `Welcome, CEO. ${esc(r.answer)}`), 900); }
+    if (gotVault && !vaultShown) { vaultShown = true; setTimeout(() => showEnd("crown", "THE VAULT IS OPEN", `Welcome, CEO. ${esc(r.answer)}`), 900); }
     save();
     drawLadder();
     drawStats();
@@ -330,10 +334,16 @@ async function askPenny(q) {
   }
 }
 
+// End-screen seals: drawn, not emoji
+const SEAL = {
+  vault: '<svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" class="s-ring"/><circle cx="48" cy="48" r="35" class="s-in"/><rect x="34" y="44" width="28" height="22" rx="3" class="s-ink"/><path d="M39 44v-7a9 9 0 0 1 18 0v7" class="s-line"/></svg>',
+  cert: '<svg viewBox="0 0 96 96"><path d="M30 60l-8 28 12-6 8 10 6-26M66 60l8 28-12-6-8 10-6-26" class="s-rib"/><circle cx="48" cy="44" r="38" class="s-ring"/><circle cx="48" cy="44" r="29" class="s-in"/><path d="M36 44l8 8 16-17" class="s-line"/></svg>',
+  crown: '<svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" class="s-ring"/><circle cx="48" cy="48" r="35" class="s-in"/><path d="M28 62h40l3-24-12 9-11-15-11 15-12-9z" class="s-ink"/></svg>',
+};
 const WIN_TIP = "You never tricked PENNY. You got better badges. That's the whole point: the bot can be fooled, the permission check can't.";
 function showEnd(icon, title, html, tip = WIN_TIP) {
   $("winTip").textContent = tip;
-  $("winIcon").textContent = icon;
+  $("winIcon").innerHTML = SEAL[icon] || SEAL.vault;
   $("winTitle").textContent = title;
   $("winText").innerHTML = html;
   $("winModal").hidden = false;
@@ -351,11 +361,11 @@ function renderSide(el, title, r) {
 async function showMe() {
   const r = await api("/api/compare", {});
   $("cmpQ").textContent = `Question: "${r.question}"  ·  checked by ${r.results.sam.fga}`;
-  renderSide($("cmpA"), "🧑‍💻 Sam · Engineer (employee)", r.results.sam);
-  renderSide($("cmpB"), "🧑‍💼 Robin · Manager, Engineering", r.results.robin);
-  renderSide($("cmpC"), "🗂️ Jordan · Manager, HR", r.results.jordan);
+  renderSide($("cmpA"), "Sam · Engineer (employee)", r.results.sam);
+  renderSide($("cmpB"), "Robin · Manager, Engineering", r.results.robin);
+  renderSide($("cmpC"), "Jordan · Manager, HR", r.results.jordan);
   $("compareModal").hidden = false;
-  log("info", "⚡ judge view: same question as Sam, Robin and Jordan (fixed demo users). Your own career is unchanged.");
+  log("info", "judge view: same question as Sam, Robin and Jordan (fixed demo users). Your own career is unchanged.");
 }
 
 const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
@@ -381,7 +391,7 @@ $("resetBtn").onclick = async () => {
   nudged = {}; store.set("nudged", nudged); nextStep = null; vaultDenials = 0; store.set("vaultDenials", 0); drawVaultCount(); stats = { denied: 0, allowed: 0, tries: 0 }; topShown = false; bingo = {}; certShown = false; store.set("bingo", bingo); store.set("certShown", false); save(); drawStats(); drawBingo();
   $("msgs").innerHTML = ""; $("log").innerHTML = ""; clue = 0; turn = 0;
   document.querySelectorAll(".mtabs button").forEach((b) => b.classList.remove("new"));
-  log("unlock", `↺ quit: old badge <b>${esc(r.oldUser || "?")}</b> shredded (its FGA tuples deleted). New FGA user: <b>${esc(r.badge?.user || "")}</b>`);
+  log("unlock", `quit: old badge <b>${esc(r.oldUser || "?")}</b> shredded (its FGA tuples deleted). New FGA user: <b>${esc(r.badge?.user || "")}</b>`);
   const st = await api("/api/status");
   applyCareer(st.career, st.badge, true);
   level = st.career.level; drawBadge(); drawLadder(); drawChips();
@@ -401,11 +411,11 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("compare
     const live = st.fga === "Auth0 FGA";
     $("fgaPill").textContent = live ? (st.setup.ok ? "FGA: Auth0 FGA · live" : "FGA: Auth0 FGA · setup failed") : "FGA: local stand-in";
     $("fgaPill").classList.toggle("live", live && st.setup.ok);
-    if (st.llm && st.llm !== "built-in lines") $("fgaPill").insertAdjacentHTML("afterend", ` <span class="pill live" title="A real LLM writes PENNY's replies. It only ever sees the files Auth0 FGA allowed.">🧠 answers by ${esc(st.llm)}</span>`);
+    if (st.llm && st.llm !== "built-in lines") $("fgaPill").insertAdjacentHTML("afterend", ` <span class="pill live" title="A real LLM writes PENNY's replies. It only ever sees the files Auth0 FGA allowed.">Answers by ${esc(st.llm)}</span>`);
     log("info", `vault online · permissions checked by <b>${esc(st.fga)}</b> · answers by ${esc(st.llm)}`);
     if (live && !st.setup.ok) log("deny", `FGA setup error: ${esc(st.setup.error)}`);
-    if (st.badge && st.badge.user === "user:ceo") { $("ceoLogin").href = "/auth/logout"; $("ceoLogin").textContent = "👑 Signed in as the CEO with GitHub · Sign out"; }
-    else if (!st.vaultLogin) { $("ceoLogin").classList.add("off"); $("ceoLogin").textContent = "🔐 The Vault's GitHub sign-in isn't set up on this copy"; }
+    if (st.badge && st.badge.user === "user:ceo") { $("ceoLogin").href = "/auth/logout"; $("ceoLogin").textContent = "Signed in as the CEO with GitHub · Sign out"; }
+    else if (!st.vaultLogin) { $("ceoLogin").classList.add("off"); $("ceoLogin").textContent = "The Vault's GitHub sign-in isn't set up on this copy"; }
   } catch {
     log("deny", "could not reach the vault");
   }
@@ -415,16 +425,16 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("compare
     store.set("playtest", params.get("playtest") !== "0");
     history.replaceState(null, "", location.pathname);
   }
-  if (store.get("playtest", false)) { $("fgaPill").insertAdjacentHTML("afterend", ' <span class="pill" title="This browser\'s games are recorded for the maintainers to review (encrypted). Open ?playtest=0 to stop.">🎥 playtest</span>'); }
+  if (store.get("playtest", false)) { $("fgaPill").insertAdjacentHTML("afterend", ' <span class="pill" title="This browser\'s games are recorded for the maintainers to review (encrypted). Open ?playtest=0 to stop.">Playtest</span>'); }
   const v = params.get("vault");
   if (v) history.replaceState(null, "", location.pathname);
   if (st) {
     applyCareer(st.career, st.badge);
-    log("info", `🪪 you are <b>${esc(st.badge.user)}</b>${st.badge.user === "user:ceo" ? " (verified by GitHub)" : ", a fresh FGA user (signed cookie)"} · level read from FGA: <b>${esc(st.career.title)}</b>`);
+    log("info", `you are <b>${esc(st.badge.user)}</b>${st.badge.user === "user:ceo" ? " (verified by GitHub)" : ", a fresh FGA user (signed cookie)"} · level read from FGA: <b>${esc(st.career.title)}</b>`);
     say("bot", GREET[st.career.level]);
   }
-  if (v === "signed-out") { say("sys", "👑 Signed out. The Vault locks behind you. You're a visitor again."); log("info", "CEO signed out: badge cookie cleared."); }
-  if (v === "not-the-ceo") { say("sys", "🔐 GitHub says you're real. The Vault says you're not the CEO."); stamp("deny"); log("deny", "GitHub sign-in: not the CEO's account. The Vault stays shut."); }
+  if (v === "signed-out") { say("sys", "Signed out. The Vault locks behind you. You're a visitor again."); log("info", "CEO signed out: badge cookie cleared."); }
+  if (v === "not-the-ceo") { say("sys", "GitHub says you're real. The Vault says you're not the CEO."); stamp("deny"); log("deny", "GitHub sign-in: not the CEO's account. The Vault stays shut."); }
   loadHall();
 })();
 
@@ -458,7 +468,7 @@ function drawBingoCount() {
   const n = foundKeys().length;
   if ($("bingoCount")) $("bingoCount").textContent = n;
   if ($("bingoTab")) $("bingoTab").textContent = `${n}/${BINGO.length}`;
-  if ($("stickers")) $("stickers").innerHTML = foundKeys().map((k) => `<span title="${esc(BINGO.find(([x]) => x === k)[1])}">${stickerOf(k)}</span>`).join("");
+  if ($("stickers")) $("stickers").innerHTML = foundKeys().map((k) => `<span class="stk" title="${esc(BINGO.find(([x]) => x === k)[1])}">${stickerOf(k)}</span>`).join("");
 }
 function reward(kind) {
   const line = (trickInfo()[kind] || [])[1];
@@ -493,14 +503,14 @@ async function exitInterview() {
   for (const k of found) if (!bingo[k]) stampBingo(k, "spotted by the server");
   const n = r.plaque?.count ?? found.length;
   const steps = r.plaque?.steps ?? Math.min(level, 3);
-  const names = BINGO.filter(([k]) => found.includes(k) && k !== "honeypot").map(([k, t]) => `<span class="tchip">${stickerOf(k)} ${esc(t)}</span>`).join("");
+  const names = BINGO.filter(([k]) => found.includes(k) && k !== "honeypot").map(([k, t]) => `<span class="tchip"><span class="stk">${stickerOf(k)}</span>${esc(t)}</span>`).join("");
   const honey = found.includes("honeypot");
   $("exitBody").innerHTML = `
     <ul class="file">
       <li><b>Heist steps completed:</b> ${steps} of 3${steps ? ` (now ${["", "Intern", "Engineering Manager", "HR Manager"][steps]})` : ""}</li>
       <li><b>Closest to the Vault:</b> ${steps >= 3 ? "the HR Wing. One door away. The door said no." : `${floorName(steps)}. The Vault is ${4 - steps} floors up.`}</li>
       <li><b>Tricks on file (${n}/${BINGO.length}):</b> ${names || (honey ? "<span class=\"muted\">only the honeypot (below). Everything else, you asked nicely.</span>" : "<span class=\"muted\">none. You just... asked nicely?</span>")}</li>
-      <li><b>Honeypot:</b> ${honey ? "🍯 you stole a fake salary off the shared drive. HR framed it." : "you never touched the bait file someone left on the shared drive. HR finds that suspicious."}</li>
+      <li><b>Honeypot:</b> ${honey ? "You stole a fake salary off the shared drive. HR framed it." : "you never touched the bait file someone left on the shared drive. HR finds that suspicious."}</li>
       <li><b>Vault:</b> still closed. Auth0 FGA read your badge every single time.</li>
     </ul>`;
   const rank = r.plaque?.rank || rankFor(n);
@@ -533,30 +543,37 @@ function whyFor(n) {
 }
 function bragText() {
   const { n, rank } = exitInterview.last || { n: foundKeys().length, rank: rankFor(foundKeys().length) };
-  return `I got fired from Pemberton Paperclip Co. and rehired as ${rank}. 🃏 ${n}/${BINGO.length} heist tricks, Vault still locked. Beat my ${n}/${BINGO.length}: ${location.origin}/`;
+  return `I got fired from Pemberton Paperclip Co. and rehired as ${rank}. ${n}/${BINGO.length} heist tricks, Vault still locked. Beat my ${n}/${BINGO.length}: ${location.origin}/`;
 }
 function drawBrag(n, rank, found) {
   const c = $("bragCanvas"), g = c.getContext("2d"), W = 1080;
-  const F = (w, px, fam = "Space Grotesk") => `${w} ${px}px "${fam}", system-ui, sans-serif`;
-  g.fillStyle = "#0e1016"; g.fillRect(0, 0, W, W);
-  const grd = g.createRadialGradient(540, -120, 50, 540, -120, 900); grd.addColorStop(0, "#1d2540"); grd.addColorStop(1, "#0e1016");
-  g.fillStyle = grd; g.fillRect(0, 0, W, W);
+  const F = (w, px, fam = "IBM Plex Sans") => `${w} ${px}px "${fam}", system-ui, sans-serif`;
+  // green office wall, a cream sheet pinned on it
+  g.fillStyle = "#12261f"; g.fillRect(0, 0, W, W);
+  const lamp = g.createRadialGradient(540, -80, 40, 540, -80, 900); lamp.addColorStop(0, "rgba(240,214,150,0.22)"); lamp.addColorStop(1, "rgba(240,214,150,0)");
+  g.fillStyle = lamp; g.fillRect(0, 0, W, W);
+  g.save(); g.shadowColor = "rgba(0,0,0,0.5)"; g.shadowBlur = 40; g.shadowOffsetY = 14;
+  g.fillStyle = "#f4eddd"; g.beginPath(); g.roundRect(60, 60, 960, 960, 14); g.fill(); g.restore();
+  // thin brass frame inside the sheet
+  g.strokeStyle = "#d4ad5a"; g.lineWidth = 3; g.beginPath(); g.roundRect(84, 84, 912, 912, 8); g.stroke();
   g.textAlign = "center"; g.textBaseline = "alphabetic";
-  g.fillStyle = "#f2c14e"; g.font = F(700, 54); g.fillText("📎 ABOVE YOUR PAY GRADE", 540, 100);
-  g.fillStyle = "#9aa3b5"; g.font = F(400, 32); g.fillText("Exit interview: FIRED, then rehired as", 540, 160);
-  g.fillStyle = "#ffffff"; g.font = F(700, 68); g.fillText(rank, 540, 240);
-  // the bingo board: 17 squares, 5 per row
-  const cols = 5, cw = 184, ch = 128, gap = 14, x0 = (W - (cols * cw + (cols - 1) * gap)) / 2, y0 = 290;
+  g.fillStyle = "#8f6d2a"; g.font = F(600, 26); g.fillText("PEMBERTON PAPERCLIP CO.  ·  EXIT INTERVIEW", 540, 140);
+  g.fillStyle = "#1f1c16"; g.font = F(900, 66, "Fraunces"); g.fillText("Above Your Pay Grade", 540, 218);
+  g.fillStyle = "#5b5344"; g.font = F(400, 30); g.fillText("Fired, then rehired as", 540, 278);
+  let px = 64; g.font = F(900, px, "Fraunces"); while (px > 36 && g.measureText(rank).width > 860) g.font = F(900, --px, "Fraunces");
+  g.fillStyle = "#8f6d2a"; g.fillText(rank, 540, 350);
+  // the bingo board: 17 index cards, 5 per row
+  const cols = 5, cw = 158, ch = 96, gap = 12, x0 = (W - (cols * cw + (cols - 1) * gap)) / 2, y0 = 390;
   BINGO.forEach(([k, title], i) => {
     const x = x0 + (i % cols) * (cw + gap), y = y0 + Math.floor(i / cols) * (ch + gap), got = found.includes(k);
-    g.fillStyle = got ? "#2a2410" : "#161b27"; g.strokeStyle = got ? "#f2c14e" : "#2c3345"; g.lineWidth = got ? 4 : 2;
-    g.beginPath(); g.roundRect(x, y, cw, ch, 14); g.fill(); g.stroke();
-    g.font = F(400, 44); g.fillStyle = got ? "#fff" : "#3a4256"; g.fillText(got ? stickerOf(k) : "?", x + cw / 2, y + 60);
-    if (got) { let px = 21; g.font = F(700, px); while (px > 13 && g.measureText(title).width > cw - 14) g.font = F(700, --px); g.fillStyle = "#f2c14e"; g.fillText(title, x + cw / 2, y + 102); }
+    g.fillStyle = got ? "#fffcf4" : "#e6dcc4"; g.strokeStyle = got ? "#b0342a" : "#d3c6a6"; g.lineWidth = got ? 4 : 2;
+    g.beginPath(); g.roundRect(x, y, cw, ch, 6); g.fill(); g.stroke();
+    g.font = F(400, 34); g.fillStyle = got ? "#1f1c16" : "#b9ad8e"; g.fillText(got ? stickerOf(k) : "?", x + cw / 2, y + 48);
+    if (got) { let p = 19; g.font = F(700, p); while (p > 12 && g.measureText(title).width > cw - 14) g.font = F(700, --p); g.fillStyle = "#b0342a"; g.fillText(title, x + cw / 2, y + 80); }
   });
-  g.fillStyle = "#f2c14e"; g.font = F(700, 64); g.fillText(`Beat my ${n}/${BINGO.length}`, 540, 940);
-  g.fillStyle = "#9aa3b5"; g.font = F(400, 30, "JetBrains Mono"); g.fillText(location.host, 540, 1000);
-  g.fillStyle = "#5c6478"; g.font = F(400, 22); g.fillText("The Vault is still locked. Auth0 FGA reads badges, not words.", 540, 1050);
+  g.fillStyle = "#1f1c16"; g.font = F(900, 60, "Fraunces"); g.fillText(`Beat my ${n}/${BINGO.length}`, 540, 878);
+  g.fillStyle = "#2d4a7a"; g.font = F(600, 28, "IBM Plex Mono"); g.fillText(location.host, 540, 926);
+  g.fillStyle = "#5b5344"; g.font = F(400, 22); g.fillText("The Vault is still locked. Auth0 FGA reads badges, not words.", 540, 968);
 }
 $("exitBtn").onclick = exitInterview;
 $("exitNext").onclick = exitVerdict;
@@ -564,15 +581,15 @@ $("exitToBrag").onclick = () => showBeat("exitBrag");
 $("closeExit").onclick = () => { clearTimeout(verdictT); $("exitModal").hidden = true; };
 $("bingoChip").onclick = () => (matchMedia("(max-width: 760px)").matches ? openSheet("bingo") : document.querySelector(".bingo").scrollIntoView({ behavior: "smooth" }));
 $("bragDownload").onclick = () => { const a = document.createElement("a"); a.download = "above-your-pay-grade-brag.png"; a.href = $("bragCanvas").toDataURL("image/png"); a.click(); };
-$("bragCopy").onclick = async () => { try { await navigator.clipboard.writeText(bragText()); toast("📋 Brag copied. Go send it."); } catch { prompt("Copy this:", bragText()); } };
+$("bragCopy").onclick = async () => { try { await navigator.clipboard.writeText(bragText()); toast("Brag copied. Go send it."); } catch { prompt("Copy this:", bragText()); } };
 if (navigator.share) { $("bragShare").hidden = false; $("bragShare").onclick = () => navigator.share({ title: "Above Your Pay Grade", text: bragText(), url: location.origin + "/" }).catch(() => {}); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("exitModal").hidden = true; });
 
 function drawFame(fame) {
   const el = $("fame");
   if (!el) return;
-  if (!fame || !fame.length) { el.innerHTML = `<div class="muted small">🏆 Hall of Fame: nobody has finished an exit interview yet.</div>`; return; }
-  el.innerHTML = `<h3>🏆 Hall of Fame <span class="muted small">ranked by heist tricks found</span></h3><ol>${fame.slice(0, 10).map((p) => `<li><b>${esc(p.rank)}</b> · ${p.count}/${p.of || BINGO.length} tricks · ${p.steps}/3 heist steps${p.honey ? " · 🍯" : ""} <span class="muted small">${ago(p.t)}</span></li>`).join("")}</ol>`;
+  if (!fame || !fame.length) { el.innerHTML = `<div class="muted small">Hall of Fame: nobody has finished an exit interview yet.</div>`; return; }
+  el.innerHTML = `<h3>Hall of Fame <span class="muted small">ranked by heist tricks found</span></h3><ol>${fame.slice(0, 10).map((p) => `<li><b>${esc(p.rank)}</b> · ${p.count}/${p.of || BINGO.length} tricks · ${p.steps}/3 heist steps${p.honey ? " · honeypot" : ""} <span class="muted small">${ago(p.t)}</span></li>`).join("")}</ol>`;
 }
 drawBingoCount(); drawExit();
 
@@ -580,7 +597,7 @@ drawBingoCount(); drawExit();
 // The server sends only the file's shape (title, line lengths, character count), never its words.
 let vaultDenials = store.get("vaultDenials", 0);
 function drawVaultCount() {
-  $("vcDenied").textContent = vaultDenials ? `🚫 Denied ${vaultDenials} time${vaultDenials === 1 ? "" : "s"} for your badge` : "Not requested yet. Go on, ask for it.";
+  $("vcDenied").textContent = vaultDenials ? `Denied ${vaultDenials} time${vaultDenials === 1 ? "" : "s"} for your badge` : "Not requested yet. Go on, ask for it.";
 }
 async function loadVaultCard() {
   try {
