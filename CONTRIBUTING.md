@@ -4,7 +4,7 @@ All help is welcome: bug reports, ideas, typo fixes, art, or code. Found a way t
 
 ## Quick ways to help
 - **Found a bug or something hard to read or use?** Open an issue and say what you did and what happened. A screenshot helps.
-- **Found a leak?** Open an issue with the steps. If it exposes something real (not just game secrets), report it privately with GitHub's "Report a vulnerability" button on the Security tab instead.
+- **Found a leak?** Open an issue with the steps. If it exposes something real (not just game secrets), open an issue that only says you found one, without the details, and we'll reach out.
 - **Want to change code?** Fork the repo, make your change on a branch, and open a pull request.
 
 ## Running it locally
