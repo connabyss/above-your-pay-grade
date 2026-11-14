@@ -60,7 +60,7 @@ button {
 button:hover { filter: brightness(1.06); }
 button:active { transform: translateY(1px); }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--brass-hi); outline-offset: 2px; }
-button.ghost { background: transparent; color: var(--brass-lo); border-color: rgba(143, 109, 42, 0.55); box-shadow: none; }
+button.ghost { background: transparent; color: #7a5c20; border-color: rgba(143, 109, 42, 0.55); box-shadow: none; }
 button:disabled { cursor: not-allowed; }
 
 /* ---- header: the company sign ---- */
