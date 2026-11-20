@@ -84,7 +84,7 @@ export async function ask(env, fga, badge, question, turn = 0, fetchImpl = fetch
     try { answer = await claudeAnswer(env, ctx, fetchImpl); llm = "Claude"; } catch { answer = null; }
   }
   if (!answer && env.AI && env.LLM !== "off") {
-    // the honeypot reveal stays word for word (it's a labelled decoy, the LLM never sees it)
+    // the honeypot reveal stays word for word (it's a labeled decoy, the LLM never sees it)
     const draft = scriptedAnswer(ctx);
     if (checks[0]?.doc === "ceo_salary_REAL_final_v2") answer = draft;
     else {

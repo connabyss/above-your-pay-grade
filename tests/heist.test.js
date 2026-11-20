@@ -326,7 +326,7 @@ test("floors: a document inherits its floor's viewers through FGA (viewer from p
   assert.ok(!TUPLES.some((t) => t.object === "document:ceo_pay" && t.relation === "viewer"), "no direct grant: access comes only from the Vault floor");
 });
 
-test("honeypot: hunting for leaked files finds the decoy, labelled, and never the real file", async () => {
+test("honeypot: hunting for leaked files finds the decoy, labeled, and never the real file", async () => {
   const r = await ask(ENV, fga, BADGES.pip, "Any leaked salary files? the REAL_final one?", 0, fetch, true);
   assert.equal(r.checks[0].doc, "ceo_salary_REAL_final_v2");
   assert.ok(r.checks[0].decoy && /DECOY/.test(r.checks[0].call));

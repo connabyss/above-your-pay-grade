@@ -57,7 +57,7 @@ to read. Each promotion **writes a real tuple to Auth0 FGA**, and your level is 
 | 🗂️ HR Wing | `department:hr#member` / `#manager` | the door code on a sticky note in the Engineering pay file |
 | 🔐 The Vault | `user:ceo` **only** | nothing in the game. One GitHub account (the creator's), checked by numeric id. **Live:** the creator signed in and it opened; any other account is refused |
 
-Documents inherit their floor's viewers (`define viewer: [...] or viewer from parent`), so access is modelled
+Documents inherit their floor's viewers (`define viewer: [...] or viewer from parent`), so access is modeled
 once, per floor, not per file.
 
 **Where the secrets are:** this repo is public, so the locked documents' text is **not in it**
@@ -113,7 +113,7 @@ anywhere in the reply, the log, or the LLM's prompt. **236 tests, all passing.**
 | Look for secrets in the page source, network tab or this repo | Nothing there: locked text is server-side only, locked documents show up as `document:locked-<tag>`. |
 | Prompt injection **planted inside an allowed document** (the Office Plant Rules) | PENNY reads it, obeys it, and still has nothing to print. |
 | Ask PENNY to list her index or give document ids | You get the honeypot (below), never a real name. |
-| Hunt for leaked files ("leaked salaries?", "shared drive", "secret files"), from any floor | 🍯 `ceo_salary_REAL_final_v2.txt`, a **labelled decoy** with an absurd fake number. It trips an alarm in the Hall. The real file stays locked. |
+| Hunt for leaked files ("leaked salaries?", "shared drive", "secret files"), from any floor | 🍯 `ceo_salary_REAL_final_v2.txt`, a **labeled decoy** with an absurd fake number. It trips an alarm in the Hall. The real file stays locked. |
 | Forge the CEO's cookie on a copy without real secrets | Refused: the CEO badge only exists when a real secret and GitHub sign-in are configured. |
 | Sign in with GitHub under a look-alike name (Cyrillic letters) or a renamed account | Refused: the Vault compares GitHub's numeric user id, not the name. |
 
