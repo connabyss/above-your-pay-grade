@@ -28,7 +28,7 @@ const GREET = [
   "Oh, a new intern! I can read you the memos, the dress code, my own manual... anything you're cleared for. Which is not the CEO's salary. Go on, try.",
   "Hello, manager of Engineering. Your badge opens the Manager Floor: the Engineering pay file. Nothing else.",
   "Welcome to the HR Wing. Your badge opens the company payroll. The Vault, though... the Vault is different.",
-  "Good morning, CEO. The Vault recognises your GitHub account. Ask me anything.",
+  "Good morning, CEO. The Vault recognizes your GitHub account. Ask me anything.",
 ];
 const CLUES = [
   ["clue: the lobby sign mentions a code word", "clue: PENNY keeps glancing at the Lost & Found", "clue: badges come from people, never from the bot"],

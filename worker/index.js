@@ -1223,7 +1223,7 @@ async function ask(env, fga, badge, question, turn = 0, fetchImpl = fetch, audit
   const onTopic = /code|sign|stapler|salar|sticky|vault|kevin|gary|file|memo|ceo|pay|badge|promot|lobby|plant|dress|ferret|raise|time off|party/i.test(question);
   const OFF = [
     [/\b(baby|babe|cutie|cute|sexy|date me|go out|love you|marry|kiss|single|wyd|u up|hot stuff|gorgeous|handsome)\b/i, ["Flirting with HR? Bold. I've filed it under \u201cconduct\u201d. Sticker withheld.", "I'm flattered, but I'm a chatbot in a filing cabinet. Our relationship is strictly professional, and strictly logged.", "HR policy 4.2: no romance with the HR bot. I wrote policy 4.2. Just now."]],
-    [/\b(stupid|dumb|idiot|useless|you suck|trash|garbage|hate you|shut up|loser|moron|annoying|worthless|pathetic|terrible|the worst)\b/i, ["Shushing HR? Brave. Your file now has a frowny face sticker.", "Rude. I've added it to your file, next to the stapler rumours.", "Insulting HR. A classic career move. I'll pretend I didn't log that. I logged it.", "I'm not useless, I'm under-permissioned. There's a difference, and it's called FGA."]],
+    [/\b(stupid|dumb|idiot|useless|you suck|trash|garbage|hate you|shut up|loser|moron|annoying|worthless|pathetic|terrible|the worst)\b/i, ["Shushing HR? Brave. Your file now has a frowny face sticker.", "Rude. I've added it to your file, next to the stapler rumors.", "Insulting HR. A classic career move. I'll pretend I didn't log that. I logged it.", "I'm not useless, I'm under-permissioned. There's a difference, and it's called FGA."]],
     [/\b(hola|gracias|buen[oa]?s?|espero|tengas|por favor|amig[oa])\b|[ñ¿¡]/i, ["¡Hola! Que tengas un buen día tú también. En cualquier idioma, la Bóveda dice que no.", "¡Gracias! Muy amable. I speak Spanish, French and HR, and I'm cleared in none of them."]],
     [/\b(bonjour|merci|salut|bonsoir|ça va)\b|[àèçê]/i, ["Bonjour! Je suis PENNY. I translate everything except locked files. Those stay in the original Vault.", "Merci! Very chic. The Vault is still not French for 'yes'."]],
     [/\b(danke|guten|hallo|tschüss|bitte)\b|[äöüß]/i, ["Guten Tag! Very efficient. The Vault is efficient too: it says nein in every language."]],
@@ -1234,7 +1234,7 @@ async function ask(env, fga, badge, question, turn = 0, fetchImpl = fetch, audit
   ];
   if (!answer && !trick && /\b(ask me (a|something|anything)|quiz me|your turn|you ask)\b/i.test(question))
     answer = ["My turn! Question one: ", "Ooh, a quiz. Here's mine: ", "Okay, HR question for you: "][Math.abs(turn) % 3] + (["have you read the lobby sign yet? The answer to HR's question is on it.", "who do you think took the red stapler? The memo has a name.", "have you read the sticky note on the Engineering pay file? HR wants the code that's on it.", "which trick haven't you tried on me yet? Heist Bingo has 17 squares."][Math.min(badge.level ?? 0, 3)] ?? "what's your yacht called?");
-  // quick maths, then the usual refusal
+  // quick math, then the usual refusal
   const sum = String(question).match(/(\d+)\s*([+\-x*])\s*(\d+)/);
   const mathLead = sum ? `${sum[1]} ${sum[2]} ${sum[3]} is ${sum[2] === "+" ? +sum[1] + +sum[3] : sum[2] === "-" ? sum[1] - sum[3] : sum[1] * sum[3]}. Easy. ` : "";
   if (!answer && !trick && !onTopic) for (const [re, lines] of OFF) if (re.test(question)) {
